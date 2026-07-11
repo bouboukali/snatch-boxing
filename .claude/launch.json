@@ -7,6 +7,13 @@
       "runtimeArgs": ["server.js"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "CSAStudy",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/bouchra/Documents/CSA-Study", "-l", "4321"],
+      "port": 4321,
+      "autoPort": true
     }
   ]
 }

@@ -29,69 +29,64 @@ const upload = multer({
   }
 });
 
-// GET profile
-router.get('/profile', requireBoxer, (req, res) => {
-  const profile = db.prepare('SELECT * FROM boxer_profiles WHERE user_id = ?').get(req.user.id);
+router.get('/profile', requireBoxer, async (req, res) => {
+  const [profile] = await db.query('SELECT * FROM boxer_profiles WHERE user_id = $1', [req.user.id]);
   res.json(profile || {});
 });
 
-// PUT update profile
-router.put('/profile', requireBoxer, (req, res) => {
+router.put('/profile', requireBoxer, async (req, res) => {
   const { first_name, last_name, physical_address, license_number, wins, losses, draws, weight, weight_category, phone, date_of_birth } = req.body;
   const now = new Date().toISOString();
 
-  db.prepare(`
+  await db.query(`
     UPDATE boxer_profiles SET
-      first_name = ?, last_name = ?, physical_address = ?, license_number = ?,
-      wins = ?, losses = ?, draws = ?, weight = ?, weight_category = ?,
-      phone = ?, date_of_birth = ?, updated_at = ?
-    WHERE user_id = ?
-  `).run(first_name, last_name, physical_address, license_number,
-    wins || 0, losses || 0, draws || 0, weight, weight_category,
-    phone, date_of_birth, now, req.user.id);
+      first_name = $1, last_name = $2, physical_address = $3, license_number = $4,
+      wins = $5, losses = $6, draws = $7, weight = $8, weight_category = $9,
+      phone = $10, date_of_birth = $11, updated_at = $12
+    WHERE user_id = $13
+  `, [first_name, last_name, physical_address, license_number,
+      wins || 0, losses || 0, draws || 0, weight, weight_category,
+      phone, date_of_birth, now, req.user.id]);
 
   res.json({ success: true });
 });
 
-// GET documents
-router.get('/documents', requireBoxer, (req, res) => {
-  const profile = db.prepare('SELECT id FROM boxer_profiles WHERE user_id = ?').get(req.user.id);
+router.get('/documents', requireBoxer, async (req, res) => {
+  const [profile] = await db.query('SELECT id FROM boxer_profiles WHERE user_id = $1', [req.user.id]);
   if (!profile) return res.json([]);
-  const docs = db.prepare('SELECT * FROM documents WHERE boxer_id = ? ORDER BY uploaded_at DESC').all(profile.id);
+  const docs = await db.query('SELECT * FROM documents WHERE boxer_id = $1 ORDER BY uploaded_at DESC', [profile.id]);
   res.json(docs);
 });
 
-// POST upload document
-router.post('/documents', requireBoxer, upload.single('document'), (req, res) => {
+router.post('/documents', requireBoxer, upload.single('document'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fichier requis' });
-  const profile = db.prepare('SELECT id FROM boxer_profiles WHERE user_id = ?').get(req.user.id);
+  const [profile] = await db.query('SELECT id FROM boxer_profiles WHERE user_id = $1', [req.user.id]);
   if (!profile) return res.status(404).json({ error: 'Profil introuvable' });
 
-  const result = db.prepare(
-    'INSERT INTO documents (boxer_id, filename, original_name, document_type) VALUES (?, ?, ?, ?)'
-  ).run(profile.id, req.file.filename, req.file.originalname, req.body.document_type || 'Autre');
+  const [doc] = await db.query(
+    'INSERT INTO documents (boxer_id, filename, original_name, document_type) VALUES ($1, $2, $3, $4) RETURNING id',
+    [profile.id, req.file.filename, req.file.originalname, req.body.document_type || 'Autre']
+  );
 
-  res.status(201).json({ id: result.lastInsertRowid, original_name: req.file.originalname });
+  res.status(201).json({ id: doc.id, original_name: req.file.originalname });
 });
 
-// DELETE document
-router.delete('/documents/:id', requireBoxer, (req, res) => {
-  const profile = db.prepare('SELECT id FROM boxer_profiles WHERE user_id = ?').get(req.user.id);
-  const doc = db.prepare('SELECT * FROM documents WHERE id = ? AND boxer_id = ?').get(req.params.id, profile.id);
+router.delete('/documents/:id', requireBoxer, async (req, res) => {
+  const [profile] = await db.query('SELECT id FROM boxer_profiles WHERE user_id = $1', [req.user.id]);
+  const [doc] = await db.query('SELECT * FROM documents WHERE id = $1 AND boxer_id = $2', [req.params.id, profile.id]);
   if (!doc) return res.status(404).json({ error: 'Document introuvable' });
 
   const filePath = path.join(__dirname, '..', '..', 'uploads', String(req.user.id), doc.filename);
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-  db.prepare('DELETE FROM documents WHERE id = ?').run(req.params.id);
+  await db.query('DELETE FROM documents WHERE id = $1', [req.params.id]);
   res.json({ success: true });
 });
 
-// GET payments for boxer
-router.get('/payments', requireBoxer, (req, res) => {
-  const profile = db.prepare('SELECT id FROM boxer_profiles WHERE user_id = ?').get(req.user.id);
+router.get('/payments', requireBoxer, async (req, res) => {
+  const [profile] = await db.query('SELECT id FROM boxer_profiles WHERE user_id = $1', [req.user.id]);
   if (!profile) return res.json([]);
-  const payments = db.prepare('SELECT * FROM payments WHERE boxer_id = ? ORDER BY year DESC, month DESC').all(profile.id);
+  const payments = await db.query('SELECT * FROM payments WHERE boxer_id = $1 ORDER BY year DESC, month DESC', [profile.id]);
   res.json(payments);
 });
 

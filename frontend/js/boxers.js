@@ -252,6 +252,141 @@ function closeModal() {
   document.getElementById('boxerModal').classList.remove('open');
 }
 
+// ===== EXPORT =====
+
+function openExportModal() {
+  const list = document.getElementById('exportBoxerList');
+  list.innerHTML = allBoxers.map(b => `
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--input-bg)">
+      <input type="checkbox" value="${b.user_id}" checked onchange="updateExportCount()"
+        style="width:15px;height:15px;accent-color:var(--primary);flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600">${fullName(b)}</div>
+        <div style="font-size:12px;color:var(--text-muted)">${[b.weight_category?.split('(')[0].trim(), b.weight ? b.weight+'kg' : null].filter(Boolean).join(' · ') || b.email}</div>
+      </div>
+      <span style="font-size:12px;color:var(--text-muted);flex-shrink:0">${(b.wins||0)}V ${(b.losses||0)}D ${(b.draws||0)}N</span>
+    </label>
+  `).join('');
+  updateExportCount();
+  document.getElementById('exportModal').classList.add('open');
+}
+
+function closeExportModal() {
+  document.getElementById('exportModal').classList.remove('open');
+}
+
+function updateExportCount() {
+  const checked = document.querySelectorAll('#exportBoxerList input[type=checkbox]:checked').length;
+  document.getElementById('exportSelectedCount').textContent = `${checked} sélectionné${checked > 1 ? 's' : ''}`;
+}
+
+function exportSelectAll() {
+  document.querySelectorAll('#exportBoxerList input[type=checkbox]').forEach(c => c.checked = true);
+  updateExportCount();
+}
+
+function exportSelectNone() {
+  document.querySelectorAll('#exportBoxerList input[type=checkbox]').forEach(c => c.checked = false);
+  updateExportCount();
+}
+
+function doExportCSV() {
+  const selectedIds = new Set(
+    Array.from(document.querySelectorAll('#exportBoxerList input[type=checkbox]:checked')).map(c => parseInt(c.value))
+  );
+  if (!selectedIds.size) { showToast('Sélectionnez au moins un boxeur', 'error'); return; }
+
+  const selected = allBoxers.filter(b => selectedIds.has(b.user_id));
+
+  const headers = ['Prénom', 'Nom', 'Poids (kg)', 'Date de naissance', 'Victoires', 'Défaites', 'Nuls', 'Total combats'];
+  const rows = selected.map(b => [
+    b.first_name || '',
+    b.last_name || '',
+    b.weight || '',
+    b.date_of_birth ? new Date(b.date_of_birth).toLocaleDateString('fr-FR') : '',
+    b.wins || 0,
+    b.losses || 0,
+    b.draws || 0,
+    (b.wins||0) + (b.losses||0) + (b.draws||0),
+  ]);
+
+  const csv = [headers, ...rows]
+    .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+    .join('\n');
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `boxeurs_snatch_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  closeExportModal();
+  showToast(`${selected.length} boxeur${selected.length > 1 ? 's' : ''} exporté${selected.length > 1 ? 's' : ''}`, 'success');
+}
+
+function doExportPDF() {
+  const selectedIds = new Set(
+    Array.from(document.querySelectorAll('#exportBoxerList input[type=checkbox]:checked')).map(c => parseInt(c.value))
+  );
+  if (!selectedIds.size) { showToast('Sélectionnez au moins un boxeur', 'error'); return; }
+
+  const selected = allBoxers.filter(b => selectedIds.has(b.user_id));
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Header
+  doc.setFillColor(8, 8, 8);
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setTextColor(201, 160, 32);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SNATCH BOXING ACADEMY', 14, 12);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(180, 180, 180);
+  doc.text('Liste des boxeurs — ' + new Date().toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }), 14, 21);
+
+  // Table
+  doc.autoTable({
+    startY: 35,
+    head: [['Prénom', 'Nom', 'Poids (kg)', 'Date de naissance', 'V', 'D', 'N', 'Total']],
+    body: selected.map(b => [
+      b.first_name || '—',
+      b.last_name || '—',
+      b.weight || '—',
+      b.date_of_birth ? new Date(b.date_of_birth).toLocaleDateString('fr-FR') : '—',
+      b.wins || 0,
+      b.losses || 0,
+      b.draws || 0,
+      (b.wins||0) + (b.losses||0) + (b.draws||0),
+    ]),
+    styles: { fontSize: 9, cellPadding: 4 },
+    headStyles: { fillColor: [201, 160, 32], textColor: [8, 8, 8], fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+    columnStyles: {
+      4: { halign: 'center', textColor: [39, 174, 96] },
+      5: { halign: 'center', textColor: [192, 57, 43] },
+      6: { halign: 'center', textColor: [100, 100, 100] },
+      7: { halign: 'center', fontStyle: 'bold' },
+    },
+  });
+
+  // Footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text(`Page ${i} / ${pageCount}`, 196, 290, { align: 'right' });
+  }
+
+  doc.save(`boxeurs_snatch_${new Date().toISOString().split('T')[0]}.pdf`);
+  closeExportModal();
+  showToast(`${selected.length} boxeur${selected.length > 1 ? 's' : ''} exporté${selected.length > 1 ? 's' : ''} en PDF`, 'success');
+}
+
 async function deleteBoxer(userId) {
   if (!confirm('Supprimer ce boxeur ? Cette action est irréversible.')) return;
   const res = await apiFetch(`/api/coach/boxers/${userId}`, { method: 'DELETE' });

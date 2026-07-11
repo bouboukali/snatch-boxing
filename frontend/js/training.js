@@ -240,7 +240,7 @@ function closeTrainingModal() {
 async function saveTrainingSheet() {
   const title = document.getElementById('tr_title').value.trim();
   const errEl = document.getElementById('trainingFormError');
-  if (!title) { errEl.textContent = 'Le titre est requis.'; errEl.style.display = 'block'; return; }
+  if (!title) { showFormError('trainingFormError', 'Le titre est requis.'); return; }
   errEl.style.display = 'none';
 
   const is_public = document.getElementById('tr_public').value === '1';
@@ -260,7 +260,7 @@ async function saveTrainingSheet() {
   const url = editingSheetId ? `/api/training/${editingSheetId}` : '/api/training';
   const method = editingSheetId ? 'PUT' : 'POST';
   const res = await apiFetch(url, { method, body: JSON.stringify(body) });
-  if (!res || !res.ok) { errEl.textContent = 'Erreur lors de la sauvegarde.'; errEl.style.display = 'block'; return; }
+  if (!res || !res.ok) { showFormError('trainingFormError', 'Erreur lors de la sauvegarde.'); return; }
 
   const data = await res.json();
   closeTrainingModal();

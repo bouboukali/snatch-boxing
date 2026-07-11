@@ -172,7 +172,12 @@ function showPage(pageId) {
   const page = document.getElementById('page-' + pageId);
   const nav = document.getElementById('nav-' + pageId);
   if (page) page.classList.add('active');
-  if (nav) nav.classList.add('active');
+  if (nav) {
+    nav.classList.add('active');
+    const titleEl = document.getElementById('mobilePageTitle');
+    if (titleEl) titleEl.textContent = nav.querySelector('.nav-icon').nextSibling.textContent.trim();
+  }
+  closeSidebar();
 
   if (pageId === 'coach-dashboard') loadCoachDashboard();
   if (pageId === 'coach-boxers') loadBoxerGrid();
@@ -210,11 +215,41 @@ function docIcon(type) {
   return '📄';
 }
 
+function showFormError(elId, msg) {
+  const el = document.getElementById(elId);
+  el.textContent = msg;
+  el.style.display = 'block';
+  const modal = el.closest('.modal');
+  if (modal) modal.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = `toast toast-${type} show`;
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ===== MOBILE SIDEBAR =====
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const btn = document.getElementById('hamburgerBtn');
+  const isOpen = sidebar.classList.contains('open');
+  if (isOpen) {
+    closeSidebar();
+  } else {
+    sidebar.classList.add('open');
+    overlay.classList.add('visible');
+    btn.classList.add('open');
+  }
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('visible');
+  document.getElementById('hamburgerBtn').classList.remove('open');
 }
 
 // ===== KEYBOARD & MODAL EVENTS =====
@@ -226,9 +261,12 @@ document.addEventListener('keydown', e => {
     if (lf && lf.style.display !== 'none') doLogin();
     else if (rf && rf.style.display !== 'none') doRegister();
   }
-  if (e.key === 'Escape') { closeModal(); closeEventModal(); closeEventDetail(); closeTrainingModal(); closeTrainingDetail(); }
+  if (e.key === 'Escape') { closeModal(); closeEventModal(); closeEventDetail(); closeTrainingModal(); closeTrainingDetail(); closeExportModal(); }
 });
 
+document.getElementById('exportModal').addEventListener('click', function(e) {
+  if (e.target === this) closeExportModal();
+});
 document.getElementById('boxerModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });

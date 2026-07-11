@@ -31,8 +31,8 @@ async function loadBoxerEvents() {
 }
 
 function boxerEventCardHTML(ev, past = false) {
-  const t = EV_TYPES[ev.type] || EV_TYPES.boxe;
-  const color = EV_COLORS[ev.type] || '#C9A020';
+  const t = getEvType(ev.type);
+  const color = getEvColor(ev.type);
   const sameDay = ev.start_date === ev.end_date;
   const startFmt = new Date(ev.start_date).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
   const endFmt   = new Date(ev.end_date).toLocaleDateString('fr-FR',   { day:'numeric', month:'long', year:'numeric' });

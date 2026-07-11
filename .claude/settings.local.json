@@ -41,7 +41,20 @@
       "Bash(jobs -l)",
       "Bash(curl -s http://localhost:3000/)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(ls -la \"/Users/bouchra/Documents/\" | grep -i \"Exam Extract\")",
+      "Bash(md5 \"Exam Extract 101 - 150-1.html\" \"Exam Extract 101 - 150.html\" \"Exam Extract 51 - 100-1.html\" \"Exam Extract 51 - 100.html\")",
+      "Bash(mkdir -p \"/Users/bouchra/Documents/CSA-Study\")",
+      "Bash(npm uninstall *)",
+      "Bash(psql postgresql://localhost:5432/postgres -c \"SELECT 1\")",
+      "Bash(brew services *)",
+      "Bash(node -e \"require\\('./backend/db'\\)\")",
+      "Bash(npx --yes serve frontend -l 3456)",
+      "Bash(curl -s http://localhost:3456/)",
+      "Bash(kill %1)",
+      "Bash(timeout 15 node -e ' *)",
+      "Bash(node -e \"process.stdin.resume\\(\\);let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);console.log\\(r.token?'✅ Login coach OK, rôle: '+r.role:'❌ '+JSON.stringify\\(r\\)\\)}\\)\")"
     ]
   }
 }

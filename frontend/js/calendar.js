@@ -15,6 +15,13 @@ const EV_COLORS = {
   sparring: '#9b59b6', cardio: '#3498db', combat: '#c0392b', recreant: '#C9A020'
 };
 
+function getEvType(type) {
+  return EV_TYPES[type] || { label: type || 'Autre', icon: '🎯', css: 'ev-recreant' };
+}
+function getEvColor(type) {
+  return EV_COLORS[type] || '#888888';
+}
+
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const DAYS_FR   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 
@@ -58,7 +65,7 @@ function renderCalendar() {
     const dayEvents = allEvents.filter(ev => ev.start_date <= dateStr && ev.end_date >= dateStr);
 
     const dots = dayEvents.slice(0,3).map(ev => {
-      const t = EV_TYPES[ev.type] || EV_TYPES.boxe;
+      const t = getEvType(ev.type);
       return `<div class="cal-event-dot ${t.css}" onclick="event.stopPropagation();openEventModal(${ev.id})" title="${ev.title}">${t.icon} ${ev.title}</div>`;
     }).join('');
 
@@ -104,14 +111,16 @@ function renderEventsList() {
 }
 
 function eventCardHTML(ev, showEdit = false) {
-  const t = EV_TYPES[ev.type] || EV_TYPES.boxe;
-  const color = EV_COLORS[ev.type] || '#C9A020';
+  const t = getEvType(ev.type);
+  const color = getEvColor(ev.type);
   const sameDay = ev.start_date === ev.end_date;
 
   const startFmt = new Date(ev.start_date).toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
   const endFmt   = new Date(ev.end_date).toLocaleDateString('fr-FR',   { day:'numeric', month:'short' });
   const dateStr  = sameDay ? startFmt : `${startFmt} → ${endFmt}`;
   const timeStr  = ev.start_time ? (sameDay ? `${ev.start_time}${ev.end_time ? ' – '+ev.end_time : ''}` : '') : '';
+
+  const duration = calcDurationLabel(ev.start_time, ev.end_time);
 
   const rsvpIcon = { accepted: '✅', declined: '❌', pending: '⏳' };
   const inviteesHtml = ev.invite_all
@@ -136,6 +145,7 @@ function eventCardHTML(ev, showEdit = false) {
         <div class="event-card-title">${t.icon} ${ev.title} ${ev.is_private ? '<span style="font-size:11px;color:var(--text-muted)">🔒</span>' : ''}</div>
         <div class="event-card-meta">
           <span>📅 ${dateStr}${timeStr ? ` · ⏰ ${timeStr}` : ''}</span>
+          ${duration ? `<span class="duration-badge" style="font-size:11px;padding:2px 8px">⏱ ${duration}</span>` : ''}
           ${ev.location ? `<span>📍 ${ev.location}${ev.country && ev.country !== 'France' ? `, ${ev.country}` : ''}</span>` : ''}
           <span class="badge" style="background:rgba(0,0,0,0.3);color:${color};font-size:11px">${t.label}</span>
         </div>
@@ -162,6 +172,169 @@ function calNextMonth() {
   renderCalendar();
 }
 
+// ===== DATE FIELD HELPERS =====
+
+function onDateChange(inputId) {
+  const val = document.getElementById(inputId).value;
+  const txtEl = document.getElementById(inputId + '_txt');
+  if (!txtEl) return;
+  if (val) {
+    const [y, m, d] = val.split('-');
+    txtEl.textContent = `· ${d}/${m}/${y}`;
+  } else {
+    txtEl.textContent = '';
+  }
+}
+
+function setDateField(inputId, isoDate) {
+  document.getElementById(inputId).value = isoDate;
+  onDateChange(inputId);
+}
+
+// ===== CUSTOM TYPE =====
+
+function onEvTypeChange(val) {
+  const customInput = document.getElementById('ev_custom_type');
+  customInput.style.display = val === '__custom__' ? 'block' : 'none';
+  if (val === '__custom__') customInput.focus();
+}
+
+function getEvTypeValue() {
+  const select = document.getElementById('ev_type');
+  if (select.value === '__custom__') {
+    return document.getElementById('ev_custom_type').value.trim() || 'Autre';
+  }
+  return select.value;
+}
+
+function setEvTypeField(type) {
+  const select = document.getElementById('ev_type');
+  const customInput = document.getElementById('ev_custom_type');
+  if (EV_TYPES[type] || type === '') {
+    select.value = type || 'boxe';
+    customInput.style.display = 'none';
+    customInput.value = '';
+  } else {
+    select.value = '__custom__';
+    customInput.value = type;
+    customInput.style.display = 'block';
+  }
+}
+
+// ===== TIME DRUM =====
+
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
+
+function initDrum(colId, items, defaultValue) {
+  const col = document.getElementById(colId);
+  if (!col) return;
+
+  col.innerHTML =
+    '<div class="drum-item drum-pad"></div>' +
+    items.map(v => `<div class="drum-item">${v}</div>`).join('') +
+    '<div class="drum-item drum-pad"></div>';
+
+  const idx = items.indexOf(defaultValue);
+  col.scrollTop = (idx >= 0 ? idx : 0) * 40;
+  updateDrumActive(col);
+
+  col.addEventListener('scroll', () => {
+    clearTimeout(col._t);
+    col._t = setTimeout(() => {
+      snapDrum(col);
+      updateDrumActive(col);
+      updateDuration();
+    }, 80);
+  });
+}
+
+function snapDrum(col) {
+  const idx = Math.round(col.scrollTop / 40);
+  col.scrollTo({ top: idx * 40, behavior: 'smooth' });
+}
+
+function updateDrumActive(col) {
+  const activeIdx = Math.round(col.scrollTop / 40);
+  col.querySelectorAll('.drum-item').forEach((item, i) => {
+    item.classList.toggle('drum-active', i === activeIdx + 1);
+  });
+}
+
+function getDrumValue(colId) {
+  const col = document.getElementById(colId);
+  if (!col) return '00';
+  const idx = Math.round(col.scrollTop / 40);
+  const realItems = col.querySelectorAll('.drum-item:not(.drum-pad)');
+  return realItems[idx]?.textContent.trim() || '00';
+}
+
+function setDrumValue(colId, value) {
+  const col = document.getElementById(colId);
+  if (!col) return;
+  const realItems = col.querySelectorAll('.drum-item:not(.drum-pad)');
+  for (let i = 0; i < realItems.length; i++) {
+    if (realItems[i].textContent.trim() === value) {
+      col.scrollTop = i * 40;
+      updateDrumActive(col);
+      return;
+    }
+  }
+}
+
+function toggleTimeSection(checked) {
+  const wrapper = document.getElementById('ev_drums_wrapper');
+  wrapper.style.display = checked ? 'block' : 'none';
+  if (checked) {
+    initDrum('drum_sh', HOURS, '09');
+    initDrum('drum_sm', MINUTES, '00');
+    initDrum('drum_eh', HOURS, '11');
+    initDrum('drum_em', MINUTES, '00');
+    updateDuration();
+  } else {
+    document.getElementById('ev_duration_display').style.display = 'none';
+  }
+}
+
+function updateDuration() {
+  const hasTime = document.getElementById('ev_has_time')?.checked;
+  const el = document.getElementById('ev_duration_display');
+  if (!hasTime || !el) return;
+
+  const sh = parseInt(getDrumValue('drum_sh'));
+  const sm = parseInt(getDrumValue('drum_sm'));
+  const eh = parseInt(getDrumValue('drum_eh'));
+  const em = parseInt(getDrumValue('drum_em'));
+
+  const startMins = sh * 60 + sm;
+  const endMins   = eh * 60 + em;
+  const diff = endMins - startMins;
+
+  if (diff <= 0 || diff > 720) { el.style.display = 'none'; return; }
+
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  const label = h > 0
+    ? (m > 0 ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`)
+    : `${m}min`;
+
+  el.textContent = `⏱ ${label} d'entraînement`;
+  el.style.display = 'inline-block';
+}
+
+// ===== DURATION LABEL (for display in cards) =====
+
+function calcDurationLabel(startTime, endTime) {
+  if (!startTime || !endTime) return null;
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  if (diff <= 0 || diff > 720) return null;
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  return h > 0 ? (m > 0 ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`) : `${m}min`;
+}
+
 // ===== EVENT MODAL =====
 
 async function openEventModal(eventId = null) {
@@ -170,19 +343,21 @@ async function openEventModal(eventId = null) {
   const errEl = document.getElementById('eventModalError');
   errEl.style.display = 'none';
 
+  // Reset fields
   document.getElementById('ev_title').value = '';
-  document.getElementById('ev_type').value = 'boxe';
+  setEvTypeField('boxe');
   document.getElementById('ev_private').value = '0';
-  document.getElementById('ev_start_date').value = '';
-  document.getElementById('ev_start_time').value = '';
-  document.getElementById('ev_end_date').value = '';
-  document.getElementById('ev_end_time').value = '';
+  setDateField('ev_start_date', '');
+  setDateField('ev_end_date', '');
   document.getElementById('ev_location').value = '';
   document.getElementById('ev_country').value = 'France';
   document.getElementById('ev_description').value = '';
   document.getElementById('ev_invite_all').checked = false;
   document.getElementById('boxerSelectList').style.display = 'none';
   document.getElementById('evDeleteBtn').style.display = 'none';
+  document.getElementById('ev_has_time').checked = false;
+  document.getElementById('ev_drums_wrapper').style.display = 'none';
+  document.getElementById('ev_duration_display').style.display = 'none';
   togglePrivate('0');
 
   await loadBoxerCheckboxes([]);
@@ -193,15 +368,28 @@ async function openEventModal(eventId = null) {
     const ev = allEvents.find(e => e.id === eventId);
     if (ev) {
       document.getElementById('ev_title').value = ev.title;
-      document.getElementById('ev_type').value = ev.type;
+      setEvTypeField(ev.type);
       document.getElementById('ev_private').value = ev.is_private ? '1' : '0';
-      document.getElementById('ev_start_date').value = ev.start_date;
-      document.getElementById('ev_start_time').value = ev.start_time || '';
-      document.getElementById('ev_end_date').value = ev.end_date;
-      document.getElementById('ev_end_time').value = ev.end_time || '';
+      setDateField('ev_start_date', ev.start_date);
+      setDateField('ev_end_date', ev.end_date);
       document.getElementById('ev_location').value = ev.location || '';
       document.getElementById('ev_country').value = ev.country || 'France';
       document.getElementById('ev_description').value = ev.description || '';
+
+      if (ev.start_time) {
+        document.getElementById('ev_has_time').checked = true;
+        document.getElementById('ev_drums_wrapper').style.display = 'block';
+        const [sh, sm] = ev.start_time.split(':');
+        const [eh, em] = (ev.end_time || '00:00').split(':');
+        // Use setTimeout so DOM is ready
+        setTimeout(() => {
+          initDrum('drum_sh', HOURS, sh);
+          initDrum('drum_sm', MINUTES, sm);
+          initDrum('drum_eh', HOURS, eh);
+          initDrum('drum_em', MINUTES, em);
+          updateDuration();
+        }, 50);
+      }
 
       togglePrivate(ev.is_private ? '1' : '0');
       if (ev.invite_all) {
@@ -216,8 +404,8 @@ async function openEventModal(eventId = null) {
   } else {
     document.getElementById('eventModalTitle').textContent = 'Nouvel événement';
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('ev_start_date').value = today;
-    document.getElementById('ev_end_date').value = today;
+    setDateField('ev_start_date', today);
+    setDateField('ev_end_date', today);
   }
 
   modal.classList.add('open');
@@ -273,10 +461,21 @@ async function saveEvent() {
   const start_date = document.getElementById('ev_start_date').value;
   const end_date   = document.getElementById('ev_end_date').value;
 
-  if (!title)      { errEl.textContent = 'Le titre est requis.'; errEl.style.display = 'block'; return; }
-  if (!start_date) { errEl.textContent = 'La date de début est requise.'; errEl.style.display = 'block'; return; }
-  if (!end_date)   { errEl.textContent = 'La date de fin est requise.'; errEl.style.display = 'block'; return; }
-  if (end_date < start_date) { errEl.textContent = 'La date de fin doit être après la date de début.'; errEl.style.display = 'block'; return; }
+  if (!title)      { showFormError('eventModalError', 'Le titre est requis.'); return; }
+  if (!start_date) { showFormError('eventModalError', 'La date de début est requise.'); return; }
+  if (!end_date)   { showFormError('eventModalError', 'La date de fin est requise.'); return; }
+  if (end_date < start_date) { showFormError('eventModalError', 'La date de fin doit être après la date de début.'); return; }
+
+  const hasTime = document.getElementById('ev_has_time').checked;
+  let start_time = null, end_time = null;
+  if (hasTime) {
+    start_time = `${getDrumValue('drum_sh')}:${getDrumValue('drum_sm')}`;
+    end_time   = `${getDrumValue('drum_eh')}:${getDrumValue('drum_em')}`;
+    if (start_date === end_date && end_time <= start_time) {
+      showFormError('eventModalError', 'L\'heure de fin doit être après l\'heure de début.');
+      return;
+    }
+  }
 
   const invite_all = document.getElementById('ev_invite_all').checked;
   let boxer_ids = [];
@@ -287,12 +486,12 @@ async function saveEvent() {
 
   const body = {
     title,
-    type:        document.getElementById('ev_type').value,
+    type:        getEvTypeValue(),
     is_private:  document.getElementById('ev_private').value === '1',
     start_date,
     end_date,
-    start_time:  document.getElementById('ev_start_time').value || null,
-    end_time:    document.getElementById('ev_end_time').value || null,
+    start_time,
+    end_time,
     location:    document.getElementById('ev_location').value.trim() || null,
     country:     document.getElementById('ev_country').value.trim() || null,
     description: document.getElementById('ev_description').value.trim() || null,
@@ -306,8 +505,7 @@ async function saveEvent() {
   const res = await apiFetch(url, { method, body: JSON.stringify(body) });
   if (!res || !res.ok) {
     const err = res ? await res.json() : {};
-    errEl.textContent = err.error || 'Erreur lors de la sauvegarde.';
-    errEl.style.display = 'block';
+    showFormError('eventModalError', err.error || 'Erreur lors de la sauvegarde.');
     return;
   }
 
@@ -334,11 +532,12 @@ async function openEventDetail(eventId) {
   if (!res || !res.ok) return;
   const ev = await res.json();
 
-  const t = EV_TYPES[ev.type] || EV_TYPES.boxe;
-  const color = EV_COLORS[ev.type] || '#C9A020';
+  const t = getEvType(ev.type);
+  const color = getEvColor(ev.type);
   const sameDay = ev.start_date === ev.end_date;
   const startFmt = new Date(ev.start_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const endFmt   = new Date(ev.end_date).toLocaleDateString('fr-FR',   { day: 'numeric', month: 'long', year: 'numeric' });
+  const duration = calcDurationLabel(ev.start_time, ev.end_time);
 
   document.getElementById('evDetailTitle').innerHTML =
     `${t.icon} ${ev.title} ${ev.is_private ? '<span style="font-size:13px;color:var(--text-muted)">🔒 Privé</span>' : ''}`;
@@ -391,7 +590,7 @@ async function openEventDetail(eventId) {
       ${ev.start_time ? `
       <div style="padding:12px 16px;background:var(--input-bg);border-radius:8px;border:1px solid var(--border)">
         <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">⏰ Horaire</div>
-        <div style="font-size:14px;font-weight:600">${ev.start_time}${ev.end_time ? ' – ' + ev.end_time : ''}</div>
+        <div style="font-size:14px;font-weight:600">${ev.start_time}${ev.end_time ? ' – ' + ev.end_time : ''}${duration ? `<span class="duration-badge" style="margin-left:10px;font-size:11px;padding:2px 8px">⏱ ${duration}</span>` : ''}</div>
       </div>` : ''}
       ${ev.location ? `
       <div style="padding:12px 16px;background:var(--input-bg);border-radius:8px;border:1px solid var(--border);grid-column:1/-1">

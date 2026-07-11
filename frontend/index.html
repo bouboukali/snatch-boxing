@@ -80,6 +80,17 @@
     </div>
   </aside>
 
+  <!-- MOBILE HEADER -->
+  <header class="mobile-header" id="mobileHeader">
+    <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <span class="mobile-header-title" id="mobilePageTitle">Snatch Boxing</span>
+  </header>
+
+  <!-- SIDEBAR OVERLAY (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
   <!-- MAIN -->
   <main class="main-content" id="mainContent">
 
@@ -103,9 +114,12 @@
 
     <!-- Coach: Boxeurs -->
     <div class="page" id="page-coach-boxers">
-      <div class="page-header">
-        <h2>Mes boxeurs</h2>
-        <p>Liste complète de votre effectif</p>
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2>Mes boxeurs</h2>
+          <p>Liste complète de votre effectif</p>
+        </div>
+        <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.4);align-self:center" onclick="openExportModal()">📥 Exporter</button>
       </div>
       <div class="search-bar">
         <span class="search-icon">🔍</span>
@@ -388,9 +402,10 @@
           <label>Titre de l'événement</label>
           <input type="text" id="ev_title" placeholder="Ex: Séance sparring semaine 24">
         </div>
+
         <div class="form-group">
-          <label>Type</label>
-          <select id="ev_type">
+          <label>Catégorie</label>
+          <select id="ev_type" onchange="onEvTypeChange(this.value)">
             <option value="boxe">🥊 Boxe anglaise</option>
             <option value="condition">💪 Condition physique</option>
             <option value="muscu">🏋️ Musculation</option>
@@ -398,8 +413,11 @@
             <option value="cardio">🏃 Cardio</option>
             <option value="combat">🏆 Combat officiel</option>
             <option value="recreant">🎯 Récréant</option>
+            <option value="__custom__">✏️ Autre (personnalisé)...</option>
           </select>
+          <input type="text" id="ev_custom_type" placeholder="Nom de la catégorie..." style="display:none;margin-top:8px">
         </div>
+
         <div class="form-group">
           <label>Visibilité</label>
           <select id="ev_private" onchange="togglePrivate(this.value)">
@@ -407,22 +425,50 @@
             <option value="1">🔒 Privé (invités seulement)</option>
           </select>
         </div>
+
         <div class="form-group">
-          <label>Date de début</label>
-          <input type="date" id="ev_start_date">
+          <label>Date de début <span id="ev_start_date_txt" class="date-fr-hint"></span></label>
+          <input type="date" id="ev_start_date" onchange="onDateChange('ev_start_date')">
         </div>
+
         <div class="form-group">
-          <label>Heure de début</label>
-          <input type="time" id="ev_start_time">
+          <label>Date de fin <span id="ev_end_date_txt" class="date-fr-hint"></span></label>
+          <input type="date" id="ev_end_date" onchange="onDateChange('ev_end_date')">
         </div>
-        <div class="form-group">
-          <label>Date de fin</label>
-          <input type="date" id="ev_end_date">
+
+        <div class="form-group full-width">
+          <div class="time-toggle-row">
+            <label class="time-toggle-label">
+              <input type="checkbox" id="ev_has_time" onchange="toggleTimeSection(this.checked)" style="width:16px;height:16px;accent-color:var(--primary)">
+              Définir un horaire
+            </label>
+            <span id="ev_duration_display" class="duration-badge" style="display:none"></span>
+          </div>
+          <div id="ev_drums_wrapper" style="display:none;margin-top:14px">
+            <div class="drums-row">
+              <div class="drum-block">
+                <div class="drum-label">Début</div>
+                <div class="time-picker">
+                  <div class="time-picker-highlight"></div>
+                  <div class="drum-col" id="drum_sh"></div>
+                  <div class="drum-sep">:</div>
+                  <div class="drum-col" id="drum_sm"></div>
+                </div>
+              </div>
+              <div class="drum-arrow">→</div>
+              <div class="drum-block">
+                <div class="drum-label">Fin</div>
+                <div class="time-picker">
+                  <div class="time-picker-highlight"></div>
+                  <div class="drum-col" id="drum_eh"></div>
+                  <div class="drum-sep">:</div>
+                  <div class="drum-col" id="drum_em"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Heure de fin</label>
-          <input type="time" id="ev_end_time">
-        </div>
+
         <div class="form-group">
           <label>Lieu</label>
           <input type="text" id="ev_location" placeholder="Salle de boxe Snatch">
@@ -496,6 +542,30 @@
 </div>
 
 <!-- ======= BOXER DETAIL MODAL ======= -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>📥 Exporter les boxeurs</h3>
+      <button class="modal-close" onclick="closeExportModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:13px;color:var(--text-muted)" id="exportSelectedCount">0 sélectionné(s)</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm btn-secondary" style="width:auto;font-size:12px" onclick="exportSelectAll()">Tout sélectionner</button>
+          <button class="btn btn-sm btn-secondary" style="width:auto;font-size:12px" onclick="exportSelectNone()">Tout désélectionner</button>
+        </div>
+      </div>
+      <div id="exportBoxerList" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;margin-bottom:20px"></div>
+      <div style="display:flex;justify-content:flex-end;gap:10px">
+        <button class="btn btn-secondary btn-sm" onclick="closeExportModal()">Annuler</button>
+        <button class="btn btn-sm" style="width:auto;background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.4)" onclick="doExportPDF()">📄 Exporter en PDF</button>
+        <button class="btn btn-primary" style="width:auto" onclick="doExportCSV()">📥 Exporter en CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="boxerModal">
   <div class="modal">
     <div class="modal-header">
@@ -518,6 +588,8 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="/js/core.js"></script>
 <script src="/js/dashboard.js"></script>
 <script src="/js/boxers.js"></script>
