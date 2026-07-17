@@ -39,9 +39,6 @@ async function initDb() {
       competition_category TEXT,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-    ALTER TABLE boxer_profiles ADD COLUMN IF NOT EXISTS gender TEXT;
-    ALTER TABLE boxer_profiles ADD COLUMN IF NOT EXISTS competition_category TEXT;
-
     CREATE TABLE IF NOT EXISTS payments (
       id SERIAL PRIMARY KEY,
       boxer_id INTEGER NOT NULL REFERENCES boxer_profiles(id) ON DELETE CASCADE,
@@ -133,6 +130,10 @@ async function initDb() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Migrations (appels séparés pour compatibilité pooler Neon)
+  await pool.query('ALTER TABLE boxer_profiles ADD COLUMN IF NOT EXISTS gender TEXT');
+  await pool.query('ALTER TABLE boxer_profiles ADD COLUMN IF NOT EXISTS competition_category TEXT');
 
   // Seed default coach
   const [coachExists] = await query("SELECT id FROM users WHERE role='coach' LIMIT 1");

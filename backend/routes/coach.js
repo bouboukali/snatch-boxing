@@ -145,14 +145,20 @@ router.put('/boxers/:userId', requireCoach, async (req, res) => {
   const now = new Date().toISOString();
 
   await db.query(`
-    UPDATE boxer_profiles SET
-      first_name = $1, last_name = $2, physical_address = $3, license_number = $4,
-      wins = $5, losses = $6, draws = $7, weight = $8, weight_category = $9,
-      phone = $10, date_of_birth = $11, gender = $12, competition_category = $13, updated_at = $14
-    WHERE user_id = $15
-  `, [first_name, last_name, physical_address, license_number,
+    INSERT INTO boxer_profiles (user_id, first_name, last_name, physical_address, license_number,
+      wins, losses, draws, weight, weight_category, phone, date_of_birth, gender, competition_category, updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+    ON CONFLICT (user_id) DO UPDATE SET
+      first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name,
+      physical_address = EXCLUDED.physical_address, license_number = EXCLUDED.license_number,
+      wins = EXCLUDED.wins, losses = EXCLUDED.losses, draws = EXCLUDED.draws,
+      weight = EXCLUDED.weight, weight_category = EXCLUDED.weight_category,
+      phone = EXCLUDED.phone, date_of_birth = EXCLUDED.date_of_birth,
+      gender = EXCLUDED.gender, competition_category = EXCLUDED.competition_category,
+      updated_at = EXCLUDED.updated_at
+  `, [req.params.userId, first_name, last_name, physical_address, license_number,
       wins || 0, losses || 0, draws || 0, weight, weight_category,
-      phone, date_of_birth, gender || null, competition_category || null, now, req.params.userId]);
+      phone, date_of_birth, gender || null, competition_category || null, now]);
 
   res.json({ success: true });
 });

@@ -259,13 +259,6 @@ function renderBoxerModalEdit() {
           <option value="Femme" ${b.gender==='Femme'?'selected':''}>♀ Femme</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Catégorie de compétition</label>
-        <select id="eb_compcat">
-          <option value="">— Sélectionner —</option>
-          ${COMPETITION_CATS.map(c => `<option value="${c}" ${b.competition_category===c?'selected':''}>${c}</option>`).join('')}
-        </select>
-      </div>
     </div>
 
     <div style="display:flex;gap:12px;justify-content:flex-end">
@@ -289,7 +282,7 @@ async function saveBoxerEdit(userId) {
     weight:  parseFloat(document.getElementById('eb_weight').value) || null,
     weight_category:      document.getElementById('eb_cat').value,
     gender:               document.getElementById('eb_gender').value || null,
-    competition_category: document.getElementById('eb_compcat').value || null,
+    competition_category: calcCompCat(document.getElementById('eb_dob').value) || null,
   };
 
   const res = await apiFetch(`/api/coach/boxers/${userId}`, {
@@ -459,13 +452,6 @@ function openCreateBoxerModal() {
           <option value="Femme">♀ Femme</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Catégorie de compétition</label>
-        <select id="nb_compcat">
-          <option value="">— Sélectionner —</option>
-          ${COMPETITION_CATS.map(c => `<option value="${c}">${c}</option>`).join('')}
-        </select>
-      </div>
     </div>
 
     <div style="display:flex;gap:12px;justify-content:flex-end">
@@ -497,7 +483,7 @@ async function saveNewBoxer() {
     weight:  parseFloat(document.getElementById('nb_weight').value) || null,
     weight_category:      document.getElementById('nb_cat').value || null,
     gender:               document.getElementById('nb_gender').value || null,
-    competition_category: document.getElementById('nb_compcat').value || null,
+    competition_category: calcCompCat(document.getElementById('nb_dob').value) || null,
   };
 
   const res = await apiFetch('/api/coach/boxers', { method: 'POST', body: JSON.stringify(body) });
