@@ -59,7 +59,7 @@ function renderBoxerGrid(boxers) {
     const avatarStyle = isFemme ? 'background:rgba(220,80,120,0.18);color:#e06090;border:1.5px solid rgba(220,80,120,0.3)'
                       : isHomme ? 'background:rgba(60,140,220,0.18);color:#5a9de0;border:1.5px solid rgba(60,140,220,0.3)'
                       : '';
-    const compCat = b.competition_category || calcCompCat(b.date_of_birth);
+    const compCat = b.competition_category;
     return `
       <div class="boxer-card" onclick="openBoxerModal(${b.user_id})">
         <div class="boxer-card-header">
