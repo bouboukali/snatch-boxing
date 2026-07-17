@@ -35,18 +35,18 @@ router.get('/profile', requireBoxer, async (req, res) => {
 });
 
 router.put('/profile', requireBoxer, async (req, res) => {
-  const { first_name, last_name, physical_address, license_number, wins, losses, draws, weight, weight_category, phone, date_of_birth } = req.body;
+  const { first_name, last_name, physical_address, license_number, wins, losses, draws, weight, weight_category, phone, date_of_birth, gender, competition_category } = req.body;
   const now = new Date().toISOString();
 
   await db.query(`
     UPDATE boxer_profiles SET
       first_name = $1, last_name = $2, physical_address = $3, license_number = $4,
       wins = $5, losses = $6, draws = $7, weight = $8, weight_category = $9,
-      phone = $10, date_of_birth = $11, updated_at = $12
-    WHERE user_id = $13
+      phone = $10, date_of_birth = $11, gender = $12, competition_category = $13, updated_at = $14
+    WHERE user_id = $15
   `, [first_name, last_name, physical_address, license_number,
       wins || 0, losses || 0, draws || 0, weight, weight_category,
-      phone, date_of_birth, now, req.user.id]);
+      phone, date_of_birth, gender || null, competition_category || null, now, req.user.id]);
 
   res.json({ success: true });
 });

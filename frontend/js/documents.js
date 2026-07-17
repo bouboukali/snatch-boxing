@@ -23,6 +23,20 @@ async function loadBoxerProfile() {
       if (opt.value === p.weight_category) { opt.selected = true; break; }
     }
   }
+
+  const genderSel = document.getElementById('pGender');
+  if (p.gender && genderSel) {
+    for (const opt of genderSel.options) {
+      if (opt.value === p.gender) { opt.selected = true; break; }
+    }
+  }
+
+  const compSel = document.getElementById('pCompCat');
+  if (p.competition_category && compSel) {
+    for (const opt of compSel.options) {
+      if (opt.value === p.competition_category) { opt.selected = true; break; }
+    }
+  }
 }
 
 async function saveProfile() {
@@ -35,9 +49,11 @@ async function saveProfile() {
     losses: parseInt(document.getElementById('pLosses').value) || 0,
     draws: parseInt(document.getElementById('pDraws').value) || 0,
     weight: parseFloat(document.getElementById('pWeight').value) || null,
-    weight_category: document.getElementById('pWeightCat').value,
-    phone: document.getElementById('pPhone').value.trim(),
-    date_of_birth: document.getElementById('pDob').value,
+    weight_category:      document.getElementById('pWeightCat').value,
+    phone:                document.getElementById('pPhone').value.trim(),
+    date_of_birth:        document.getElementById('pDob').value,
+    gender:               document.getElementById('pGender')?.value || null,
+    competition_category: document.getElementById('pCompCat')?.value || null,
   };
 
   const res = await apiFetch('/api/boxer/profile', {

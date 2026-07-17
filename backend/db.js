@@ -35,8 +35,12 @@ async function initDb() {
       weight_category TEXT,
       phone TEXT,
       date_of_birth TEXT,
+      gender TEXT,
+      competition_category TEXT,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    ALTER TABLE boxer_profiles ADD COLUMN IF NOT EXISTS gender TEXT;
+    ALTER TABLE boxer_profiles ADD COLUMN IF NOT EXISTS competition_category TEXT;
 
     CREATE TABLE IF NOT EXISTS payments (
       id SERIAL PRIMARY KEY,

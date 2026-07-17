@@ -1,12 +1,37 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const db = require('../db');
 const { requireCoach } = require('../middleware/auth');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '..', '..', 'uploads', String(req.params.userId));
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, unique + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+    if (allowed.includes(path.extname(file.originalname).toLowerCase())) cb(null, true);
+    else cb(new Error('Type de fichier non autorisé'));
+  }
+});
 
 const router = express.Router();
 
 router.post('/boxers', requireCoach, async (req, res) => {
-  const { email, password, first_name, last_name, phone, date_of_birth, license_number, physical_address, wins, losses, draws, weight, weight_category } = req.body;
+  const { email, password, first_name, last_name, phone, date_of_birth, license_number, physical_address, wins, losses, draws, weight, weight_category, gender, competition_category } = req.body;
   if (!email) return res.status(400).json({ error: 'Email requis' });
   if (!password || password.length < 6) return res.status(400).json({ error: 'Mot de passe requis (min 6 caractères)' });
 
@@ -20,11 +45,12 @@ router.post('/boxers', requireCoach, async (req, res) => {
   );
 
   await db.query(`
-    INSERT INTO boxer_profiles (user_id, first_name, last_name, phone, date_of_birth, license_number, physical_address, wins, losses, draws, weight, weight_category)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    INSERT INTO boxer_profiles (user_id, first_name, last_name, phone, date_of_birth, license_number, physical_address, wins, losses, draws, weight, weight_category, gender, competition_category)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
   `, [newUser.id, first_name || null, last_name || null, phone || null, date_of_birth || null,
       license_number || null, physical_address || null,
-      wins || 0, losses || 0, draws || 0, weight || null, weight_category || null]);
+      wins || 0, losses || 0, draws || 0, weight || null, weight_category || null,
+      gender || null, competition_category || null]);
 
   res.status(201).json({ id: newUser.id, email: email.toLowerCase().trim() });
 });
@@ -34,7 +60,7 @@ router.get('/boxers', requireCoach, async (req, res) => {
     SELECT u.id as user_id, u.email, u.created_at,
       bp.id as profile_id, bp.first_name, bp.last_name, bp.license_number,
       bp.wins, bp.losses, bp.draws, bp.weight, bp.weight_category,
-      bp.phone, bp.date_of_birth, bp.updated_at
+      bp.phone, bp.date_of_birth, bp.gender, bp.competition_category, bp.updated_at
     FROM users u
     LEFT JOIN boxer_profiles bp ON bp.user_id = u.id
     WHERE u.role = 'boxer'
@@ -48,7 +74,7 @@ router.get('/boxers/:userId', requireCoach, async (req, res) => {
     SELECT u.id as user_id, u.email, u.created_at,
       bp.id as profile_id, bp.first_name, bp.last_name, bp.physical_address,
       bp.license_number, bp.wins, bp.losses, bp.draws, bp.weight, bp.weight_category,
-      bp.phone, bp.date_of_birth, bp.updated_at
+      bp.phone, bp.date_of_birth, bp.gender, bp.competition_category, bp.updated_at
     FROM users u
     LEFT JOIN boxer_profiles bp ON bp.user_id = u.id
     WHERE u.id = $1 AND u.role = 'boxer'
@@ -115,18 +141,18 @@ router.put('/boxers/:userId', requireCoach, async (req, res) => {
   const [user] = await db.query('SELECT id FROM users WHERE id = $1 AND role = $2', [req.params.userId, 'boxer']);
   if (!user) return res.status(404).json({ error: 'Boxeur introuvable' });
 
-  const { first_name, last_name, physical_address, license_number, wins, losses, draws, weight, weight_category, phone, date_of_birth } = req.body;
+  const { first_name, last_name, physical_address, license_number, wins, losses, draws, weight, weight_category, phone, date_of_birth, gender, competition_category } = req.body;
   const now = new Date().toISOString();
 
   await db.query(`
     UPDATE boxer_profiles SET
       first_name = $1, last_name = $2, physical_address = $3, license_number = $4,
       wins = $5, losses = $6, draws = $7, weight = $8, weight_category = $9,
-      phone = $10, date_of_birth = $11, updated_at = $12
-    WHERE user_id = $13
+      phone = $10, date_of_birth = $11, gender = $12, competition_category = $13, updated_at = $14
+    WHERE user_id = $15
   `, [first_name, last_name, physical_address, license_number,
       wins || 0, losses || 0, draws || 0, weight, weight_category,
-      phone, date_of_birth, now, req.params.userId]);
+      phone, date_of_birth, gender || null, competition_category || null, now, req.params.userId]);
 
   res.json({ success: true });
 });
@@ -166,6 +192,28 @@ router.post('/payments/notify', requireCoach, async (req, res) => {
   }
 
   res.json({ sent, total: targets.length });
+});
+
+router.post('/boxers/:userId/documents', requireCoach, upload.single('document'), async (req, res) => {
+  const [profile] = await db.query('SELECT id FROM boxer_profiles WHERE user_id = $1', [req.params.userId]);
+  if (!profile) return res.status(404).json({ error: 'Boxeur introuvable' });
+  if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
+
+  const [doc] = await db.query(
+    'INSERT INTO documents (boxer_id, filename, original_name, document_type) VALUES ($1, $2, $3, $4) RETURNING *',
+    [profile.id, req.file.filename, req.file.originalname, req.body.document_type || 'Autre']
+  );
+  res.status(201).json(doc);
+});
+
+router.delete('/documents/:docId', requireCoach, async (req, res) => {
+  const [doc] = await db.query('SELECT d.*, bp.user_id FROM documents d JOIN boxer_profiles bp ON bp.id = d.boxer_id WHERE d.id = $1', [req.params.docId]);
+  if (!doc) return res.status(404).json({ error: 'Document introuvable' });
+
+  const filePath = path.join(__dirname, '..', '..', 'uploads', String(doc.user_id), doc.filename);
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  await db.query('DELETE FROM documents WHERE id = $1', [req.params.docId]);
+  res.json({ success: true });
 });
 
 router.delete('/boxers/:userId', requireCoach, async (req, res) => {

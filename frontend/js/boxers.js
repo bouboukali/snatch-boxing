@@ -1,5 +1,7 @@
 // ===== COACH BOXERS =====
 
+const COMPETITION_CATS = ['Elite', 'Youth', 'U22', 'U19', 'U17', 'U15', 'U13', 'Masters', 'Récréant'];
+
 const WEIGHT_CATS = [
   'Mini-mouche (−46,5 kg)','Mi-mouche (−48 kg)','Mouche (−50,8 kg)','Super-mouche (−52 kg)',
   'Coq (−53,5 kg)','Super-coq (−55,3 kg)','Plume (−57 kg)','Super-plume (−58,9 kg)',
@@ -41,7 +43,11 @@ function renderBoxerGrid(boxers) {
           </div>
           ${b.weight_category ? `<span class="weight-pill">${b.weight_category.split('(')[0].trim()}</span>` : ''}
         </div>
-        ${b.license_number ? `<div style="font-size:12px;color:var(--text-muted)">🪪 ${b.license_number}</div>` : ''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+          ${b.gender ? `<span class="info-pill">${b.gender === 'Homme' ? '♂' : '♀'} ${b.gender}</span>` : ''}
+          ${b.competition_category ? `<span class="info-pill info-pill-gold">${b.competition_category}</span>` : ''}
+          ${b.license_number ? `<span style="font-size:12px;color:var(--text-muted)">🪪 ${b.license_number}</span>` : ''}
+        </div>
         <div class="boxer-card-stats">
           <span><strong class="record-w">${b.wins||0}</strong> V</span>
           <span><strong class="record-l">${b.losses||0}</strong> D</span>
@@ -95,21 +101,39 @@ function renderBoxerModalView() {
       ${infoRow('📅', 'Date de naissance', b.date_of_birth ? new Date(b.date_of_birth).toLocaleDateString('fr-FR') : null)}
       ${infoRow('🪪', 'Licence', b.license_number)}
       ${infoRow('⚖️', 'Poids', b.weight ? b.weight + ' kg' : null)}
-      ${infoRow('🏅', 'Catégorie', b.weight_category)}
+      ${infoRow('🏅', 'Catégorie de poids', b.weight_category)}
+      ${infoRow('⚥', 'Sexe', b.gender)}
+      ${infoRow('🏆', 'Catégorie compétition', b.competition_category)}
       ${infoRow('📍', 'Adresse', b.physical_address, true)}
     </div>
 
-    <div class="section-title">Documents (${b.documents.length})</div>
-    <div style="margin-bottom:20px">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Documents (${b.documents.length})</span>
+      <label class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3);cursor:pointer;margin:0">
+        + Ajouter
+        <input type="file" id="docUploadInput" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display:none" onchange="uploadBoxerDoc(${b.user_id}, this)">
+      </label>
+    </div>
+    <div style="margin-bottom:4px;margin-top:6px">
+      <select id="docTypeSelect" style="width:100%;padding:6px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;margin-bottom:10px">
+        <option>Licence</option>
+        <option>Certificat médical</option>
+        <option>Contrat</option>
+        <option>Identité</option>
+        <option>Autre</option>
+      </select>
+    </div>
+    <div id="docList" style="margin-bottom:20px">
       ${b.documents.length ? b.documents.map(d => `
-        <div class="doc-item">
+        <div class="doc-item" id="doc-${d.id}">
           <span class="doc-icon">${docIcon(d.document_type)}</span>
           <div class="doc-info">
             <div class="doc-name">${d.original_name}</div>
             <div class="doc-meta">${d.document_type} — ${new Date(d.uploaded_at).toLocaleDateString('fr-FR')}</div>
           </div>
+          <button class="btn btn-sm btn-danger" style="padding:4px 8px;font-size:12px" onclick="deleteBoxerDoc(${d.id})">✕</button>
         </div>
-      `).join('') : '<p style="color:var(--text-muted);font-size:14px">Aucun document déposé.</p>'}
+      `).join('') : '<p id="noDocMsg" style="color:var(--text-muted);font-size:14px">Aucun document déposé.</p>'}
     </div>
 
     <div class="section-title">Paiements récents</div>
@@ -198,6 +222,21 @@ function renderBoxerModalEdit() {
           ${WEIGHT_CATS.map(c => `<option value="${c}" ${b.weight_category===c?'selected':''}>${c}</option>`).join('')}
         </select>
       </div>
+      <div class="form-group">
+        <label>Sexe</label>
+        <select id="eb_gender">
+          <option value="">— Sélectionner —</option>
+          <option value="Homme" ${b.gender==='Homme'?'selected':''}>♂ Homme</option>
+          <option value="Femme" ${b.gender==='Femme'?'selected':''}>♀ Femme</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Catégorie de compétition</label>
+        <select id="eb_compcat">
+          <option value="">— Sélectionner —</option>
+          ${COMPETITION_CATS.map(c => `<option value="${c}" ${b.competition_category===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
     </div>
 
     <div style="display:flex;gap:12px;justify-content:flex-end">
@@ -219,7 +258,9 @@ async function saveBoxerEdit(userId) {
     losses:  parseInt(document.getElementById('eb_losses').value) || 0,
     draws:   parseInt(document.getElementById('eb_draws').value) || 0,
     weight:  parseFloat(document.getElementById('eb_weight').value) || null,
-    weight_category: document.getElementById('eb_cat').value,
+    weight_category:      document.getElementById('eb_cat').value,
+    gender:               document.getElementById('eb_gender').value || null,
+    competition_category: document.getElementById('eb_compcat').value || null,
   };
 
   const res = await apiFetch(`/api/coach/boxers/${userId}`, {
@@ -246,6 +287,63 @@ function infoRow(icon, label, value, fullWidth = false) {
     <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">${icon} ${label}</div>
     <div style="font-weight:500">${value}</div>
   </div>`;
+}
+
+async function uploadBoxerDoc(userId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const docType = document.getElementById('docTypeSelect').value;
+
+  const formData = new FormData();
+  formData.append('document', file);
+  formData.append('document_type', docType);
+
+  const token = getToken();
+  const res = await fetch(`/api/coach/boxers/${userId}/documents`, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+    body: formData
+  });
+
+  if (!res.ok) { showToast('Erreur lors de l\'upload', 'error'); return; }
+  const doc = await res.json();
+
+  // Ajouter le doc dans la liste sans recharger le modal
+  const list = document.getElementById('docList');
+  const noMsg = document.getElementById('noDocMsg');
+  if (noMsg) noMsg.remove();
+
+  const item = document.createElement('div');
+  item.className = 'doc-item';
+  item.id = `doc-${doc.id}`;
+  item.innerHTML = `
+    <span class="doc-icon">${docIcon(doc.document_type)}</span>
+    <div class="doc-info">
+      <div class="doc-name">${doc.original_name}</div>
+      <div class="doc-meta">${doc.document_type} — ${new Date(doc.uploaded_at).toLocaleDateString('fr-FR')}</div>
+    </div>
+    <button class="btn btn-sm btn-danger" style="padding:4px 8px;font-size:12px" onclick="deleteBoxerDoc(${doc.id})">✕</button>
+  `;
+  list.appendChild(item);
+  _currentModalBoxer.documents.push(doc);
+
+  // Reset input
+  input.value = '';
+  showToast('Document ajouté', 'success');
+}
+
+async function deleteBoxerDoc(docId) {
+  const res = await apiFetch(`/api/coach/documents/${docId}`, { method: 'DELETE' });
+  if (!res || !res.ok) { showToast('Erreur lors de la suppression', 'error'); return; }
+
+  document.getElementById(`doc-${docId}`)?.remove();
+  _currentModalBoxer.documents = _currentModalBoxer.documents.filter(d => d.id !== docId);
+
+  if (_currentModalBoxer.documents.length === 0) {
+    const list = document.getElementById('docList');
+    if (list) list.innerHTML = '<p id="noDocMsg" style="color:var(--text-muted);font-size:14px">Aucun document déposé.</p>';
+  }
+  showToast('Document supprimé', 'success');
 }
 
 function closeModal() {
@@ -324,6 +422,21 @@ function openCreateBoxerModal() {
           ${WEIGHT_CATS.map(c => `<option value="${c}">${c}</option>`).join('')}
         </select>
       </div>
+      <div class="form-group">
+        <label>Sexe</label>
+        <select id="nb_gender">
+          <option value="">— Sélectionner —</option>
+          <option value="Homme">♂ Homme</option>
+          <option value="Femme">♀ Femme</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Catégorie de compétition</label>
+        <select id="nb_compcat">
+          <option value="">— Sélectionner —</option>
+          ${COMPETITION_CATS.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+      </div>
     </div>
 
     <div style="display:flex;gap:12px;justify-content:flex-end">
@@ -353,7 +466,9 @@ async function saveNewBoxer() {
     losses:  parseInt(document.getElementById('nb_losses').value) || 0,
     draws:   parseInt(document.getElementById('nb_draws').value) || 0,
     weight:  parseFloat(document.getElementById('nb_weight').value) || null,
-    weight_category: document.getElementById('nb_cat').value || null,
+    weight_category:      document.getElementById('nb_cat').value || null,
+    gender:               document.getElementById('nb_gender').value || null,
+    competition_category: document.getElementById('nb_compcat').value || null,
   };
 
   const res = await apiFetch('/api/coach/boxers', { method: 'POST', body: JSON.stringify(body) });
