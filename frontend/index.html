@@ -99,17 +99,10 @@
     <!-- Coach: Dashboard -->
     <div class="page" id="page-coach-dashboard">
       <div class="page-header">
-        <h2>Tableau de bord</h2>
-        <p>Vue d'ensemble de votre effectif</p>
+        <h2>Bonjour 👋</h2>
+        <p>Voici ce qui se passe aujourd'hui</p>
       </div>
-      <div class="stats-grid" id="coachStats"></div>
-      <div class="card">
-        <div class="card-header">
-          <h3>Paiements du mois en cours</h3>
-          <button class="btn btn-sm btn-secondary" onclick="showPage('coach-payments')">Voir tous</button>
-        </div>
-        <div class="card-body" id="dashPaymentPreview"></div>
-      </div>
+      <div id="dashContent"></div>
     </div>
 
     <!-- Coach: Boxeurs -->
@@ -119,7 +112,10 @@
           <h2>Mes boxeurs</h2>
           <p>Liste complète de votre effectif</p>
         </div>
-        <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.4);align-self:center" onclick="openExportModal()">📥 Exporter</button>
+        <div style="display:flex;gap:10px;align-self:center">
+          <button class="btn btn-primary" style="width:auto" onclick="openCreateBoxerModal()">+ Ajouter un boxeur</button>
+          <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.4)" onclick="openExportModal()">📥 Exporter</button>
+        </div>
       </div>
       <div class="search-bar">
         <span class="search-icon">🔍</span>

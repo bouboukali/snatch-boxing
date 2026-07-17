@@ -1,8 +1,33 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { requireCoach } = require('../middleware/auth');
 
 const router = express.Router();
+
+router.post('/boxers', requireCoach, async (req, res) => {
+  const { email, password, first_name, last_name, phone, date_of_birth, license_number, physical_address, wins, losses, draws, weight, weight_category } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email requis' });
+  if (!password || password.length < 6) return res.status(400).json({ error: 'Mot de passe requis (min 6 caractères)' });
+
+  const [existing] = await db.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+  if (existing) return res.status(409).json({ error: 'Cet email est déjà utilisé' });
+
+  const hash = bcrypt.hashSync(password, 10);
+  const [newUser] = await db.query(
+    "INSERT INTO users (email, password, role) VALUES ($1, $2, 'boxer') RETURNING id",
+    [email.toLowerCase().trim(), hash]
+  );
+
+  await db.query(`
+    INSERT INTO boxer_profiles (user_id, first_name, last_name, phone, date_of_birth, license_number, physical_address, wins, losses, draws, weight, weight_category)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+  `, [newUser.id, first_name || null, last_name || null, phone || null, date_of_birth || null,
+      license_number || null, physical_address || null,
+      wins || 0, losses || 0, draws || 0, weight || null, weight_category || null]);
+
+  res.status(201).json({ id: newUser.id, email: email.toLowerCase().trim() });
+});
 
 router.get('/boxers', requireCoach, async (req, res) => {
   const boxers = await db.query(`
