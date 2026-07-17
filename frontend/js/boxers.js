@@ -12,6 +12,29 @@ const WEIGHT_CATS = [
 
 let _currentModalBoxer = null;
 
+function calcCompCat(dob) {
+  if (!dob) return null;
+  const birth = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  if (age < 13)  return 'U13';
+  if (age < 15)  return 'U15';
+  if (age < 17)  return 'U17';
+  if (age < 19)  return 'Youth';
+  if (age < 23)  return 'U22';
+  if (age < 40)  return 'Elite';
+  return 'Masters';
+}
+
+function onDobChange(dobId, compCatId) {
+  const dob = document.getElementById(dobId)?.value;
+  const cat = calcCompCat(dob);
+  const sel = document.getElementById(compCatId);
+  if (cat && sel) sel.value = cat;
+}
+
 async function loadBoxerGrid() {
   const res = await apiFetch('/api/coach/boxers');
   if (!res) return;
@@ -31,11 +54,17 @@ function renderBoxerGrid(boxers) {
   grid.innerHTML = boxers.map(b => {
     const initials = getInitials(b);
     const total = (b.wins||0) + (b.losses||0) + (b.draws||0);
+    const isFemme = b.gender === 'Femme';
+    const isHomme = b.gender === 'Homme';
+    const avatarStyle = isFemme ? 'background:rgba(220,80,120,0.18);color:#e06090;border:1.5px solid rgba(220,80,120,0.3)'
+                      : isHomme ? 'background:rgba(60,140,220,0.18);color:#5a9de0;border:1.5px solid rgba(60,140,220,0.3)'
+                      : '';
+    const compCat = b.competition_category || calcCompCat(b.date_of_birth);
     return `
       <div class="boxer-card" onclick="openBoxerModal(${b.user_id})">
         <div class="boxer-card-header">
           <div style="display:flex;gap:12px;align-items:center">
-            <div class="boxer-avatar">${initials}</div>
+            <div class="boxer-avatar" ${avatarStyle ? `style="${avatarStyle}"` : ''}>${initials}</div>
             <div>
               <div class="boxer-card-name">${fullName(b)}</div>
               <div class="boxer-card-email">${b.email}</div>
@@ -43,10 +72,10 @@ function renderBoxerGrid(boxers) {
           </div>
           ${b.weight_category ? `<span class="weight-pill">${b.weight_category.split('(')[0].trim()}</span>` : ''}
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-          ${b.gender ? `<span class="info-pill">${b.gender === 'Homme' ? '♂' : '♀'} ${b.gender}</span>` : ''}
-          ${b.competition_category ? `<span class="info-pill info-pill-gold">${b.competition_category}</span>` : ''}
-          ${b.license_number ? `<span style="font-size:12px;color:var(--text-muted)">🪪 ${b.license_number}</span>` : ''}
+        <div class="boxer-card-meta">
+          ${b.gender ? `<span class="meta-pill ${isFemme ? 'meta-pill-f' : 'meta-pill-m'}">${isFemme ? '♀' : '♂'} ${b.gender}</span>` : '<span class="meta-pill meta-pill-none">Genre ?</span>'}
+          ${compCat ? `<span class="meta-pill meta-pill-cat">${compCat}</span>` : ''}
+          ${b.license_number ? `<span class="meta-pill">🪪 ${b.license_number}</span>` : ''}
         </div>
         <div class="boxer-card-stats">
           <span><strong class="record-w">${b.wins||0}</strong> V</span>
@@ -185,7 +214,7 @@ function renderBoxerModalEdit() {
       </div>
       <div class="form-group">
         <label>Date de naissance</label>
-        <input type="date" id="eb_dob" value="${b.date_of_birth||''}">
+        <input type="date" id="eb_dob" value="${b.date_of_birth||''}" onchange="onDobChange('eb_dob','eb_compcat')">
       </div>
       <div class="form-group">
         <label>Numéro de licence</label>
@@ -385,7 +414,7 @@ function openCreateBoxerModal() {
       </div>
       <div class="form-group">
         <label>Date de naissance</label>
-        <input type="date" id="nb_dob">
+        <input type="date" id="nb_dob" onchange="onDobChange('nb_dob','nb_compcat')">
       </div>
       <div class="form-group">
         <label>Numéro de licence</label>
