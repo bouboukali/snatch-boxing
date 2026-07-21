@@ -59,6 +59,7 @@ async function loadBoxerGrid() {
   const res = await apiFetch('/api/coach/boxers');
   if (!res) return;
   allBoxers = await res.json();
+  populateWeightFilter();
   renderBoxerGrid(allBoxers);
 }
 
@@ -108,14 +109,50 @@ function renderBoxerGrid(boxers) {
   }).join('');
 }
 
+function populateWeightFilter() {
+  const sel = document.getElementById('filterWeightCat');
+  if (!sel) return;
+  const all = [...new Set([
+    ...WEIGHT_CATS_ELITE_H,
+    ...WEIGHT_CATS_ELITE_F,
+    ...WEIGHT_CATS_U17
+  ])].sort((a, b) => {
+    const toNum = s => s.startsWith('+') ? 9999 : parseFloat(s);
+    return toNum(a) - toNum(b);
+  });
+  sel.innerHTML = '<option value="">Tous les poids</option>' +
+    all.map(w => `<option value="${w}">${w}</option>`).join('');
+}
+
 function filterBoxers() {
-  const q = document.getElementById('boxerSearch').value.toLowerCase();
-  const filtered = allBoxers.filter(b =>
-    fullName(b).toLowerCase().includes(q) ||
-    (b.email||'').toLowerCase().includes(q) ||
-    (b.license_number||'').toLowerCase().includes(q)
-  );
+  const q       = document.getElementById('boxerSearch').value.toLowerCase();
+  const gender  = document.getElementById('filterGender')?.value || '';
+  const compCat = document.getElementById('filterCompCat')?.value || '';
+  const weightCat = document.getElementById('filterWeightCat')?.value || '';
+
+  const hasFilter = q || gender || compCat || weightCat;
+  const resetBtn = document.getElementById('filterResetBtn');
+  if (resetBtn) resetBtn.style.display = hasFilter ? '' : 'none';
+
+  const filtered = allBoxers.filter(b => {
+    if (q && !fullName(b).toLowerCase().includes(q) &&
+              !(b.email||'').toLowerCase().includes(q) &&
+              !(b.license_number||'').toLowerCase().includes(q)) return false;
+    if (gender && b.gender !== gender) return false;
+    if (compCat && b.competition_category !== compCat) return false;
+    if (weightCat && b.weight_category !== weightCat) return false;
+    return true;
+  });
   renderBoxerGrid(filtered);
+}
+
+function resetFilters() {
+  document.getElementById('boxerSearch').value = '';
+  document.getElementById('filterGender').value = '';
+  document.getElementById('filterCompCat').value = '';
+  document.getElementById('filterWeightCat').value = '';
+  document.getElementById('filterResetBtn').style.display = 'none';
+  renderBoxerGrid(allBoxers);
 }
 
 async function openBoxerModal(userId) {
@@ -235,7 +272,6 @@ function renderBoxerModalEdit() {
       <div class="form-group">
         <label>Date de naissance</label>
         <input type="date" id="eb_dob" value="${b.date_of_birth||''}" onchange="onDobChange('eb_dob','eb_compcat','eb_gender','eb_cat')">
-        <input type="hidden" id="eb_compcat" value="${b.competition_category||''}">
       </div>
       <div class="form-group">
         <label>Numéro de licence</label>
@@ -262,7 +298,7 @@ function renderBoxerModalEdit() {
         <input type="number" id="eb_draws" min="0" value="${b.draws||0}">
       </div>
       <div class="form-group">
-        <label>Poids (kg)</label>
+        <label>Poids actuel (kg)</label>
         <input type="number" id="eb_weight" step="0.1" min="40" value="${b.weight||''}">
       </div>
       <div class="form-group">
@@ -278,6 +314,13 @@ function renderBoxerModalEdit() {
           <option value="">— Sélectionner —</option>
           <option value="Homme" ${b.gender==='Homme'?'selected':''}>♂ Homme</option>
           <option value="Femme" ${b.gender==='Femme'?'selected':''}>♀ Femme</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Catégorie <span style="font-size:11px;color:var(--text-muted)">(auto depuis DDN)</span></label>
+        <select id="eb_compcat">
+          <option value="">— Sélectionner —</option>
+          ${COMPETITION_CATS.map(c => `<option value="${c}" ${b.competition_category===c?'selected':''}>${c}</option>`).join('')}
         </select>
       </div>
     </div>
@@ -429,7 +472,6 @@ function openCreateBoxerModal() {
       <div class="form-group">
         <label>Date de naissance</label>
         <input type="date" id="nb_dob" onchange="onDobChange('nb_dob','nb_compcat','nb_gender','nb_cat')">
-        <input type="hidden" id="nb_compcat" value="">
       </div>
       <div class="form-group">
         <label>Numéro de licence</label>
@@ -456,7 +498,7 @@ function openCreateBoxerModal() {
         <input type="number" id="nb_draws" min="0" value="0">
       </div>
       <div class="form-group">
-        <label>Poids (kg)</label>
+        <label>Poids actuel (kg)</label>
         <input type="number" id="nb_weight" step="0.1" min="40" placeholder="70.5">
       </div>
       <div class="form-group">
@@ -472,6 +514,13 @@ function openCreateBoxerModal() {
           <option value="">— Sélectionner —</option>
           <option value="Homme">♂ Homme</option>
           <option value="Femme">♀ Femme</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Catégorie <span style="font-size:11px;color:var(--text-muted)">(auto depuis DDN)</span></label>
+        <select id="nb_compcat">
+          <option value="">— Sélectionner —</option>
+          ${COMPETITION_CATS.map(c => `<option value="${c}">${c}</option>`).join('')}
         </select>
       </div>
     </div>

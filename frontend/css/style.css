@@ -822,7 +822,27 @@ tr:hover td { background: rgba(201,160,32,0.03); }
 .modal-body { padding: 24px; }
 
 /* ===== SEARCH ===== */
-.search-bar { position: relative; margin-bottom: 20px; }
+.search-bar { position: relative; margin-bottom: 12px; }
+
+.boxer-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+.boxer-filters select {
+  padding: 7px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.boxer-filters select:focus { border-color: var(--primary); }
 
 .search-bar input {
   width: 100%;

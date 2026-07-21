@@ -15,11 +15,6 @@
       <img src="/logo.png" class="site-logo-img" alt="Snatch Boxing Academy">
     </div>
 
-    <div class="tab-switcher">
-      <button class="tab-btn active" onclick="switchAuthTab('login')">Connexion</button>
-      <button class="tab-btn" onclick="switchAuthTab('register')">Inscription</button>
-    </div>
-
     <div id="authError" class="error-msg"></div>
 
     <!-- LOGIN FORM -->
@@ -33,26 +28,6 @@
         <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
       </div>
       <button class="btn btn-primary" onclick="doLogin()">Se connecter</button>
-    </div>
-
-    <!-- REGISTER FORM (boxers only) -->
-    <div id="registerForm" style="display:none">
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
-        Créez votre compte à la <strong style="color:var(--primary)">Snatch Boxing Academy</strong>. Le coach pourra ensuite suivre vos informations et paiements.
-      </p>
-      <div class="form-group">
-        <label>Adresse email</label>
-        <input type="email" id="regEmail" placeholder="votre@email.fr">
-      </div>
-      <div class="form-group">
-        <label>Mot de passe (min. 6 caractères)</label>
-        <input type="password" id="regPassword" placeholder="••••••••">
-      </div>
-      <div class="form-group">
-        <label>Confirmer le mot de passe</label>
-        <input type="password" id="regConfirm" placeholder="••••••••">
-      </div>
-      <button class="btn btn-primary" onclick="doRegister()">Créer mon compte</button>
     </div>
   </div>
 </div>
@@ -120,6 +95,26 @@
       <div class="search-bar">
         <span class="search-icon">🔍</span>
         <input type="text" id="boxerSearch" placeholder="Rechercher un boxeur..." oninput="filterBoxers()">
+      </div>
+      <div class="boxer-filters" id="boxerFilters">
+        <select id="filterGender" onchange="filterBoxers()">
+          <option value="">Tous les sexes</option>
+          <option value="Homme">Homme</option>
+          <option value="Femme">Femme</option>
+        </select>
+        <select id="filterCompCat" onchange="filterBoxers()">
+          <option value="">Toutes catégories</option>
+          <option value="U15">U15</option>
+          <option value="U17">U17</option>
+          <option value="U19">U19</option>
+          <option value="Elite">Elite</option>
+          <option value="Masters">Masters</option>
+          <option value="Récréant">Récréant</option>
+        </select>
+        <select id="filterWeightCat" onchange="filterBoxers()">
+          <option value="">Tous les poids</option>
+        </select>
+        <button class="btn btn-sm" id="filterResetBtn" style="display:none;width:auto;padding:6px 14px;background:rgba(255,255,255,0.06);color:var(--text-muted);border:1px solid var(--border)" onclick="resetFilters()">Réinitialiser</button>
       </div>
       <div class="boxer-grid" id="boxerGrid"></div>
     </div>
