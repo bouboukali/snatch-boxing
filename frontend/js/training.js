@@ -1,12 +1,12 @@
 // ===== TRAINING SHEETS =====
 
 const TR_TYPES = {
-  muscu:     { label: 'Musculation',       icon: '🏋️', color: '#e67e22' },
-  cardio:    { label: 'Cardio',            icon: '🏃', color: '#3498db' },
-  boxe:      { label: 'Boxe',             icon: '🥊', color: '#e74c3c' },
-  condition: { label: 'Condition physique', icon: '💪', color: '#2ecc71' },
-  sparring:  { label: 'Sparring',          icon: '🤜', color: '#9b59b6' },
-  recreant:  { label: 'Récréant',          icon: '🎯', color: '#C9A020' },
+  muscu:     { label: 'Musculation',       icon: '', color: '#e67e22' },
+  cardio:    { label: 'Cardio',            icon: '', color: '#3498db' },
+  boxe:      { label: 'Boxe',             icon: '', color: '#e74c3c' },
+  condition: { label: 'Condition physique', icon: '', color: '#2ecc71' },
+  sparring:  { label: 'Sparring',          icon: '', color: '#9b59b6' },
+  recreant:  { label: 'Récréant',          icon: '', color: '#C9A020' },
 };
 
 let allTrainingSheets = [];
@@ -33,7 +33,7 @@ function renderTrainingSheets(sheets) {
   if (!el) return;
 
   if (!sheets.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>${currentRole === 'boxer' ? 'Aucune fiche ne vous a été assignée.' : 'Aucune fiche d\'entraînement créée.'}</p></div>`;
+    el.innerHTML = `<div class="empty-state"><p>${currentRole === 'boxer' ? 'Aucune fiche ne vous a été assignée.' : 'Aucune fiche d\'entraînement créée.'}</p></div>`;
     return;
   }
 
@@ -42,7 +42,7 @@ function renderTrainingSheets(sheets) {
       const t = TR_TYPES[s.type] || TR_TYPES.muscu;
       const isCoach = currentRole === 'coach';
       const visibilityBadge = isCoach
-        ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${s.is_public ? 'rgba(46,204,113,0.12)' : 'rgba(255,255,255,0.06)'};color:${s.is_public ? '#2ecc71' : 'var(--text-muted)'}">${s.is_public ? '🌐 Public' : '🔒 Privé'}</span>`
+        ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${s.is_public ? 'rgba(46,204,113,0.12)' : 'rgba(255,255,255,0.06)'};color:${s.is_public ? '#2ecc71' : 'var(--text-muted)'}">${s.is_public ? 'Public' : 'Privé'}</span>`
         : '';
       return `
         <div class="card" style="cursor:pointer;border-top:3px solid ${t.color};transition:transform 0.15s" onclick="openTrainingDetail(${s.id})"
@@ -58,14 +58,14 @@ function renderTrainingSheets(sheets) {
               </div>
               ${isCoach ? `
               <div style="display:flex;gap:6px;flex-shrink:0">
-                <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3);padding:4px 8px" onclick="event.stopPropagation();openTrainingModal(${s.id})">✏️</button>
-                <button class="btn btn-sm btn-danger" style="padding:4px 8px" onclick="event.stopPropagation();deleteTrainingSheet(${s.id})">🗑</button>
+                <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3);padding:4px 8px" onclick="event.stopPropagation();openTrainingModal(${s.id})">Modifier</button>
+                <button class="btn btn-sm btn-danger" style="padding:4px 8px" onclick="event.stopPropagation();deleteTrainingSheet(${s.id})">Supprimer</button>
               </div>` : ''}
             </div>
             ${s.description ? `<p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;line-height:1.5">${s.description}</p>` : ''}
             <div style="font-size:12px;color:var(--text-muted)">
-              📝 ${s.exercise_count} exercice${s.exercise_count !== 1 ? 's' : ''}
-              ${isCoach && !s.is_public ? ` · 👤 ${s.assigned_count || 0} boxeur${s.assigned_count !== 1 ? 's' : ''}` : ''}
+              ${s.exercise_count} exercice${s.exercise_count !== 1 ? 's' : ''}
+              ${isCoach && !s.is_public ? ` · ${s.assigned_count || 0} boxeur${s.assigned_count !== 1 ? 's' : ''}` : ''}
             </div>
           </div>
         </div>
@@ -111,19 +111,19 @@ async function openTrainingModal(sheetId = null) {
       <div class="form-group">
         <label>Type d'entraînement</label>
         <select id="tr_type" onchange="renderTrExercisePlaceholders()">
-          <option value="muscu" ${!sheet || sheet.type==='muscu'?'selected':''}>🏋️ Musculation</option>
-          <option value="cardio" ${sheet?.type==='cardio'?'selected':''}>🏃 Cardio</option>
-          <option value="boxe" ${sheet?.type==='boxe'?'selected':''}>🥊 Boxe</option>
-          <option value="condition" ${sheet?.type==='condition'?'selected':''}>💪 Condition physique</option>
-          <option value="sparring" ${sheet?.type==='sparring'?'selected':''}>🤜 Sparring</option>
-          <option value="recreant" ${sheet?.type==='recreant'?'selected':''}>🎯 Récréant</option>
+          <option value="muscu" ${!sheet || sheet.type==='muscu'?'selected':''}>Musculation</option>
+          <option value="cardio" ${sheet?.type==='cardio'?'selected':''}>Cardio</option>
+          <option value="boxe" ${sheet?.type==='boxe'?'selected':''}>Boxe</option>
+          <option value="condition" ${sheet?.type==='condition'?'selected':''}>Condition physique</option>
+          <option value="sparring" ${sheet?.type==='sparring'?'selected':''}>Sparring</option>
+          <option value="recreant" ${sheet?.type==='recreant'?'selected':''}>Récréant</option>
         </select>
       </div>
       <div class="form-group">
         <label>Visibilité</label>
         <select id="tr_public" onchange="toggleTrVisibility(this.value)">
-          <option value="0" ${!isPublic?'selected':''}>🔒 Privé (boxeurs assignés)</option>
-          <option value="1" ${isPublic?'selected':''}>🌐 Public (tous les boxeurs)</option>
+          <option value="0" ${!isPublic?'selected':''}>Privé (boxeurs assignés)</option>
+          <option value="1" ${isPublic?'selected':''}>Public (tous les boxeurs)</option>
         </select>
       </div>
       <div class="form-group full-width">
@@ -157,7 +157,7 @@ async function openTrainingModal(sheetId = null) {
 
     <div style="display:flex;justify-content:flex-end;gap:10px">
       <button class="btn btn-secondary btn-sm" onclick="closeTrainingModal()">Annuler</button>
-      <button class="btn btn-primary" style="width:auto" onclick="saveTrainingSheet()">💾 ${sheetId ? 'Enregistrer' : 'Créer la fiche'}</button>
+      <button class="btn btn-primary" style="width:auto" onclick="saveTrainingSheet()">${sheetId ? 'Enregistrer' : 'Créer la fiche'}</button>
     </div>
   `;
 
@@ -313,7 +313,7 @@ function renderTrainingDetail() {
   const colDuration = isCardio ? 'Distance/intensité' : 'Temps sous tension';
 
   const exercisesHtml = !s.exercises.length
-    ? `<div class="empty-state" style="padding:30px"><div class="empty-icon">🏋️</div><p>Aucun exercice${isCoach ? '. Ajoutez-en ci-dessous.' : '.'}</p></div>`
+    ? `<div class="empty-state" style="padding:30px"><p>Aucun exercice${isCoach ? '. Ajoutez-en ci-dessous.' : '.'}</p></div>`
     : `<div class="table-wrapper">
         <table>
           <thead><tr>
@@ -335,8 +335,8 @@ function renderTrainingDetail() {
                 <td>${ex.duration ?? '—'}</td>
                 <td>${ex.rest ?? '—'}</td>
                 ${isCoach ? `<td style="display:flex;gap:6px">
-                  <button class="btn btn-sm" style="padding:3px 8px;background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3)" onclick="editExerciseRow(${ex.id})">✏️</button>
-                  <button class="btn btn-sm btn-danger" style="padding:3px 8px" onclick="deleteExercise(${ex.id})">🗑</button>
+                  <button class="btn btn-sm" style="padding:3px 8px;background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3)" onclick="editExerciseRow(${ex.id})">Modifier</button>
+                  <button class="btn btn-sm btn-danger" style="padding:3px 8px" onclick="deleteExercise(${ex.id})">Supprimer</button>
                 </td>` : ''}
               </tr>
             `).join('')}
@@ -378,10 +378,10 @@ function renderTrainingDetail() {
       </div>
     </div>
     <div style="display:flex;justify-content:flex-end;margin-top:16px;gap:10px">
-      <button class="btn btn-sm btn-secondary" onclick="closeTrainingDetail();openTrainingModal(${s.id})">✏️ Modifier la fiche</button>
+      <button class="btn btn-sm btn-secondary" onclick="closeTrainingDetail();openTrainingModal(${s.id})">Modifier la fiche</button>
     </div>` : `
     <div style="display:flex;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-primary" style="width:auto" onclick="openPerformanceForm()">📊 Enregistrer ma séance</button>
+      <button class="btn btn-primary" style="width:auto" onclick="openPerformanceForm()">Enregistrer ma séance</button>
     </div>
     <div id="performanceFormContainer"></div>
     <div id="performanceHistoryContainer"></div>`;
@@ -389,7 +389,7 @@ function renderTrainingDetail() {
   document.getElementById('trainingDetailBody').innerHTML = `
     ${s.description ? `<p style="color:var(--text-muted);font-size:14px;margin-bottom:16px;line-height:1.6">${s.description}</p>` : ''}
     ${s.notes ? `<div style="padding:12px 16px;background:rgba(201,160,32,0.08);border:1px solid rgba(201,160,32,0.2);border-radius:8px;margin-bottom:16px;font-size:13px">
-      <span style="color:var(--primary);font-weight:700">💡 Note coach : </span>${s.notes}
+      <span style="color:var(--primary);font-weight:700">Note coach : </span>${s.notes}
     </div>` : ''}
     <div class="section-title" style="margin-bottom:12px">Exercices (${s.exercises.length})</div>
     ${exercisesHtml}
@@ -422,7 +422,7 @@ async function openPerformanceForm() {
 
   container.innerHTML = `
     <div style="margin-top:20px;padding:20px;background:var(--input-bg);border:2px solid rgba(201,160,32,0.3);border-radius:12px">
-      <div style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--primary);margin-bottom:16px">📊 Ma séance</div>
+      <div style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--primary);margin-bottom:16px">Ma séance</div>
       <div class="form-group" style="margin-bottom:16px">
         <label>Date de la séance</label>
         <input type="date" id="perf_date" value="${today}">
@@ -430,7 +430,7 @@ async function openPerformanceForm() {
       ${exerciseRows}
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
         <button class="btn btn-secondary" style="width:auto" onclick="document.getElementById('performanceFormContainer').innerHTML=''">Annuler</button>
-        <button class="btn btn-primary" style="width:auto" onclick="savePerformance()">💾 Enregistrer</button>
+        <button class="btn btn-primary" style="width:auto" onclick="savePerformance()">Enregistrer</button>
       </div>
     </div>
   `;
@@ -495,7 +495,7 @@ async function loadPerformanceHistory() {
     `).join('');
     return `
       <div style="margin-bottom:12px;padding:14px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px">
-        <div style="font-weight:700;font-size:13px;color:var(--primary);margin-bottom:8px">📅 ${new Date(date).toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+        <div style="font-weight:700;font-size:13px;color:var(--primary);margin-bottom:8px">${new Date(date).toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
         ${entriesHtml}
       </div>
     `;

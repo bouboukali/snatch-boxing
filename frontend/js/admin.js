@@ -16,7 +16,7 @@ async function loadAdminUsers() {
   const users = await res.json();
   const el = document.getElementById('adminUsersList');
 
-  const roleLabel = { coach: '🏆 Coach', boxer: '🥊 Boxeur' };
+  const roleLabel = { coach: 'Coach', boxer: 'Boxeur' };
   const roleColor = { coach: 'var(--primary)', boxer: 'var(--text-secondary)' };
 
   el.innerHTML = `
@@ -26,7 +26,7 @@ async function loadAdminUsers() {
         return `
           <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px">
             <div style="width:42px;height:42px;border-radius:50%;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
-              ${u.role === 'coach' ? '🏆' : '🥊'}
+              ${u.role === 'coach' ? 'C' : 'B'}
             </div>
             <div style="flex:1;min-width:0">
               ${name ? `<div style="font-weight:700;font-size:15px">${name}</div>` : ''}
@@ -35,7 +35,7 @@ async function loadAdminUsers() {
             </div>
             <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.4);flex-shrink:0"
               onclick="impersonateUser(${u.id}, '${u.email}')">
-              🔑 Se connecter
+              Se connecter
             </button>
           </div>
         `;

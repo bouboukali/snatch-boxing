@@ -36,11 +36,11 @@ async function loadCoachPayments() {
   document.getElementById('paymentSummaryBadge').innerHTML =
     `<span class="badge badge-paid">${paid} payé${paid>1?'s':''}</span>
      <span class="badge badge-unpaid" style="margin-left:6px">${unpaidCount} en attente</span>
-     ${unpaidCount > 0 ? `<button class="btn btn-sm" style="margin-left:12px;width:auto;background:rgba(201,160,32,0.15);color:var(--primary);border:1px solid rgba(201,160,32,0.4);padding:4px 12px;font-size:12px" onclick="notifyAllUnpaid(${month},${year})">📧 Notifier les impayés (${unpaidCount})</button>` : ''}`;
+     ${unpaidCount > 0 ? `<button class="btn btn-sm" style="margin-left:12px;width:auto;background:rgba(201,160,32,0.15);color:var(--primary);border:1px solid rgba(201,160,32,0.4);padding:4px 12px;font-size:12px" onclick="notifyAllUnpaid(${month},${year})">Notifier les impayés (${unpaidCount})</button>` : ''}`;
 
   if (!data.boxers.length) {
     document.getElementById('paymentsTable').innerHTML =
-      `<div class="empty-state"><div class="empty-icon">👥</div><p>Aucun boxeur inscrit.</p></div>`;
+      `<div class="empty-state"><p>Aucun boxeur inscrit.</p></div>`;
     return;
   }
 
@@ -69,9 +69,9 @@ async function loadCoachPayments() {
                     <div class="toggle-thumb"></div>
                   </label>
                   <span id="pay-label-${b.profile_id}" style="font-size:13px;color:${b.paid ? 'var(--success)' : 'var(--text-muted)'}">
-                    ${b.paid ? '✓ Payé' : 'Non payé'}
+                    ${b.paid ? 'Payé' : 'Non payé'}
                   </span>
-                  ${!b.paid ? `<button class="btn btn-sm" style="width:auto;padding:3px 10px;font-size:12px;background:rgba(201,160,32,0.1);color:var(--primary);border:1px solid rgba(201,160,32,0.3)" onclick="notifyOneBoxer(${b.user_id}, ${month}, ${year})">📧 Relancer</button>` : ''}
+                  <button id="relancer-${b.profile_id}" class="btn btn-sm" style="width:auto;padding:3px 10px;font-size:12px;background:rgba(201,160,32,0.1);color:var(--primary);border:1px solid rgba(201,160,32,0.3);${b.paid ? 'display:none' : ''}" onclick="notifyOneBoxer(${b.user_id}, ${month}, ${year})">Relancer</button>
                 </div>
               </td>
             </tr>
@@ -89,7 +89,7 @@ async function notifyAllUnpaid(month, year) {
   });
   if (!res) return;
   const d = await res.json();
-  showToast(`📧 ${d.sent} rappel${d.sent > 1 ? 's' : ''} envoyé${d.sent > 1 ? 's' : ''}`, 'success');
+  showToast(`${d.sent} rappel${d.sent > 1 ? 's' : ''} envoyé${d.sent > 1 ? 's' : ''}`, 'success');
 }
 
 async function notifyOneBoxer(userId, month, year) {
@@ -99,7 +99,7 @@ async function notifyOneBoxer(userId, month, year) {
   });
   if (!res) return;
   const d = await res.json();
-  showToast(d.sent ? '📧 Rappel envoyé' : 'Erreur envoi', d.sent ? 'success' : 'error');
+  showToast(d.sent ? 'Rappel envoyé' : 'Erreur envoi', d.sent ? 'success' : 'error');
 }
 
 async function togglePayment(profileId, month, year, paid) {
@@ -109,9 +109,11 @@ async function togglePayment(profileId, month, year, paid) {
   });
   const label = document.getElementById(`pay-label-${profileId}`);
   if (label) {
-    label.textContent = paid ? '✓ Payé' : 'Non payé';
+    label.textContent = paid ? 'Payé' : 'Non payé';
     label.style.color = paid ? 'var(--success)' : 'var(--text-muted)';
   }
+  const relancer = document.getElementById(`relancer-${profileId}`);
+  if (relancer) relancer.style.display = paid ? 'none' : '';
   showToast(paid ? 'Paiement enregistré' : 'Paiement annulé', paid ? 'success' : 'error');
 }
 
@@ -125,7 +127,7 @@ async function loadBoxerPayments() {
   const el = document.getElementById('boxerPaymentsTable');
 
   if (!payments.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><p>Aucun paiement enregistré pour l'instant.</p></div>`;
+    el.innerHTML = `<div class="empty-state"><p>Aucun paiement enregistré pour l'instant.</p></div>`;
     return;
   }
 
@@ -137,7 +139,7 @@ async function loadBoxerPayments() {
           ${payments.map(p => `
             <tr>
               <td style="font-weight:600">${MONTHS[p.month-1]} ${p.year}</td>
-              <td>${p.paid ? '<span class="badge badge-paid">✓ Payé</span>' : '<span class="badge badge-unpaid">✗ Non payé</span>'}</td>
+              <td>${p.paid ? '<span class="badge badge-paid">Payé</span>' : '<span class="badge badge-unpaid">Non payé</span>'}</td>
               <td style="color:var(--text-muted);font-size:13px">${p.paid_at ? new Date(p.paid_at).toLocaleDateString('fr-FR') : '—'}</td>
             </tr>
           `).join('')}

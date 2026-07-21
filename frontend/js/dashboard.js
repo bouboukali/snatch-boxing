@@ -61,7 +61,7 @@ async function loadCoachDashboard() {
       <!-- Upcoming events -->
       <div class="card">
         <div class="card-header">
-          <h3>📅 Prochains événements</h3>
+          <h3>Prochains événements</h3>
           <button class="btn btn-sm btn-secondary" onclick="showPage('coach-calendar')">Voir tout</button>
         </div>
         <div class="card-body" style="padding:0">
@@ -84,7 +84,7 @@ async function loadCoachDashboard() {
       <!-- Payment alert -->
       <div class="card">
         <div class="card-header">
-          <h3>💳 Paiements — ${monthLabel}</h3>
+          <h3>Paiements — ${monthLabel}</h3>
           <button class="btn btn-sm btn-secondary" onclick="showPage('coach-payments')">Gérer</button>
         </div>
         <div class="card-body" style="padding:0">

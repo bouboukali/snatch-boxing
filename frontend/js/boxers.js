@@ -1,14 +1,24 @@
 // ===== COACH BOXERS =====
 
-const COMPETITION_CATS = ['Elite', 'Youth', 'U22', 'U19', 'U17', 'U15', 'U13', 'Masters', 'Récréant'];
+const COMPETITION_CATS = ['U15', 'U17', 'U19', 'Elite', 'Masters', 'Récréant'];
 
-const WEIGHT_CATS = [
-  'Mini-mouche (−46,5 kg)','Mi-mouche (−48 kg)','Mouche (−50,8 kg)','Super-mouche (−52 kg)',
-  'Coq (−53,5 kg)','Super-coq (−55,3 kg)','Plume (−57 kg)','Super-plume (−58,9 kg)',
-  'Léger (−61 kg)','Super-léger (−63,5 kg)','Mi-moyen (−66 kg)','Super-mi-moyen (−69 kg)',
-  'Moyen (−72 kg)','Super-moyen (−76 kg)','Mi-lourd (−80 kg)','Cruiser (−90 kg)',
-  'Lourd (−90,7 kg)','Super-lourd (+90,7 kg)'
-];
+const WEIGHT_CATS_ELITE_H  = ['50 kg','55 kg','60 kg','65 kg','70 kg','75 kg','80 kg','85 kg','90 kg','+90 kg'];
+const WEIGHT_CATS_ELITE_F  = ['48 kg','51 kg','54 kg','57 kg','60 kg','65 kg','70 kg','75 kg','80 kg','+80 kg'];
+const WEIGHT_CATS_U17      = ['46 kg','48 kg','50 kg','52 kg','54 kg','57 kg','60 kg','63 kg','66 kg','70 kg','75 kg','80 kg','+80 kg'];
+
+function getWeightCats(gender, compCat) {
+  if (compCat === 'U17') return WEIGHT_CATS_U17;
+  if (gender === 'Femme') return WEIGHT_CATS_ELITE_F;
+  return WEIGHT_CATS_ELITE_H;
+}
+
+function updateWeightCatSelect(selectId, gender, compCat, currentVal) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const cats = getWeightCats(gender, compCat);
+  sel.innerHTML = '<option value="">— Sélectionner —</option>' +
+    cats.map(c => `<option value="${c}" ${c === currentVal ? 'selected' : ''}>${c}</option>`).join('');
+}
 
 let _currentModalBoxer = null;
 
@@ -19,20 +29,30 @@ function calcCompCat(dob) {
   let age = today.getFullYear() - birth.getFullYear();
   const m = today.getMonth() - birth.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  if (age < 13)  return 'U13';
+  if (age < 13)  return null;
   if (age < 15)  return 'U15';
   if (age < 17)  return 'U17';
-  if (age < 19)  return 'Youth';
-  if (age < 23)  return 'U22';
-  if (age < 40)  return 'Elite';
+  if (age < 19)  return 'U19';
+  if (age <= 40) return 'Elite';
   return 'Masters';
 }
 
-function onDobChange(dobId, compCatId) {
-  const dob = document.getElementById(dobId)?.value;
-  const cat = calcCompCat(dob);
-  const sel = document.getElementById(compCatId);
-  if (cat && sel) sel.value = cat;
+function onDobChange(dobId, compCatId, genderId, weightCatId) {
+  const dob    = document.getElementById(dobId)?.value;
+  const cat    = calcCompCat(dob);
+  const compEl = document.getElementById(compCatId);
+  if (cat && compEl) compEl.value = cat;
+  if (weightCatId && genderId) {
+    const gender = document.getElementById(genderId)?.value;
+    updateWeightCatSelect(weightCatId, gender, cat || compEl?.value, '');
+  }
+}
+
+function onGenderChange(genderId, compCatId, weightCatId) {
+  const gender  = document.getElementById(genderId)?.value;
+  const compCat = document.getElementById(compCatId)?.value;
+  const current = document.getElementById(weightCatId)?.value;
+  updateWeightCatSelect(weightCatId, gender, compCat, current);
 }
 
 async function loadBoxerGrid() {
@@ -46,7 +66,7 @@ function renderBoxerGrid(boxers) {
   const grid = document.getElementById('boxerGrid');
   if (!boxers.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <div class="empty-icon">👥</div>
+      
       <p>Aucun boxeur inscrit pour l'instant.</p>
     </div>`;
     return;
@@ -75,7 +95,7 @@ function renderBoxerGrid(boxers) {
         <div class="boxer-card-meta">
           ${b.gender ? `<span class="meta-pill ${isFemme ? 'meta-pill-f' : 'meta-pill-m'}">${isFemme ? '♀' : '♂'} ${b.gender}</span>` : '<span class="meta-pill meta-pill-none">Genre ?</span>'}
           ${compCat ? `<span class="meta-pill meta-pill-cat">${compCat}</span>` : ''}
-          ${b.license_number ? `<span class="meta-pill">🪪 ${b.license_number}</span>` : ''}
+          ${b.license_number ? `<span class="meta-pill">${b.license_number}</span>` : ''}
         </div>
         <div class="boxer-card-stats">
           <span><strong class="record-w">${b.wins||0}</strong> V</span>
@@ -110,7 +130,7 @@ function renderBoxerModalView() {
   const b = _currentModalBoxer;
   document.getElementById('modalTitle').innerHTML = `
     ${fullName(b) || b.email}
-    <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3);margin-left:10px;font-size:12px" onclick="renderBoxerModalEdit()">✏️ Modifier</button>
+    <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3);margin-left:10px;font-size:12px" onclick="renderBoxerModalEdit()">Modifier</button>
   `;
   const total = (b.wins||0)+(b.losses||0)+(b.draws||0);
   const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
@@ -125,15 +145,15 @@ function renderBoxerModalView() {
 
     <div class="section-title">Informations personnelles</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:20px;font-size:14px">
-      ${infoRow('📧', 'Email', b.email)}
-      ${infoRow('📞', 'Téléphone', b.phone)}
-      ${infoRow('📅', 'Date de naissance', b.date_of_birth ? new Date(b.date_of_birth).toLocaleDateString('fr-FR') : null)}
-      ${infoRow('🪪', 'Licence', b.license_number)}
-      ${infoRow('⚖️', 'Poids', b.weight ? b.weight + ' kg' : null)}
-      ${infoRow('🏅', 'Catégorie de poids', b.weight_category)}
-      ${infoRow('⚥', 'Sexe', b.gender)}
-      ${infoRow('🏆', 'Catégorie compétition', b.competition_category)}
-      ${infoRow('📍', 'Adresse', b.physical_address, true)}
+      ${infoRow('', 'Email', b.email)}
+      ${infoRow('', 'Téléphone', b.phone)}
+      ${infoRow('', 'Date de naissance', b.date_of_birth ? new Date(b.date_of_birth).toLocaleDateString('fr-FR') : null)}
+      ${infoRow('', 'Licence', b.license_number)}
+      ${infoRow('', 'Poids', b.weight ? b.weight + ' kg' : null)}
+      ${infoRow('', 'Catégorie de poids', b.weight_category)}
+      ${infoRow('', 'Sexe', b.gender)}
+      ${infoRow('', 'Catégorie compétition', b.competition_category)}
+      ${infoRow('', 'Adresse', b.physical_address, true)}
     </div>
 
     <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
@@ -182,7 +202,7 @@ function renderBoxerModalView() {
     ` : '<p style="color:var(--text-muted);font-size:14px">Aucun paiement enregistré.</p>'}
 
     <div style="margin-top:20px;display:flex;justify-content:flex-end">
-      <button class="btn btn-danger btn-sm" onclick="deleteBoxer(${b.user_id})">🗑 Supprimer ce boxeur</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteBoxer(${b.user_id})">Supprimer ce boxeur</button>
     </div>
   `;
 }
@@ -190,7 +210,7 @@ function renderBoxerModalView() {
 function renderBoxerModalEdit() {
   const b = _currentModalBoxer;
   document.getElementById('modalTitle').innerHTML = `
-    ✏️ Modifier — ${fullName(b) || b.email}
+    Modifier — ${fullName(b) || b.email}
     <button class="btn btn-sm btn-secondary" style="margin-left:10px;font-size:12px" onclick="renderBoxerModalView()">✕ Annuler</button>
   `;
 
@@ -214,7 +234,8 @@ function renderBoxerModalEdit() {
       </div>
       <div class="form-group">
         <label>Date de naissance</label>
-        <input type="date" id="eb_dob" value="${b.date_of_birth||''}" onchange="onDobChange('eb_dob','eb_compcat')">
+        <input type="date" id="eb_dob" value="${b.date_of_birth||''}" onchange="onDobChange('eb_dob','eb_compcat','eb_gender','eb_cat')">
+        <input type="hidden" id="eb_compcat" value="${b.competition_category||''}">
       </div>
       <div class="form-group">
         <label>Numéro de licence</label>
@@ -248,12 +269,12 @@ function renderBoxerModalEdit() {
         <label>Catégorie de poids</label>
         <select id="eb_cat">
           <option value="">— Sélectionner —</option>
-          ${WEIGHT_CATS.map(c => `<option value="${c}" ${b.weight_category===c?'selected':''}>${c}</option>`).join('')}
+          ${getWeightCats(b.gender, b.competition_category).map(c => `<option value="${c}" ${b.weight_category===c?'selected':''}>${c}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
         <label>Sexe</label>
-        <select id="eb_gender">
+        <select id="eb_gender" onchange="onGenderChange('eb_gender','eb_compcat','eb_cat')">
           <option value="">— Sélectionner —</option>
           <option value="Homme" ${b.gender==='Homme'?'selected':''}>♂ Homme</option>
           <option value="Femme" ${b.gender==='Femme'?'selected':''}>♀ Femme</option>
@@ -263,7 +284,7 @@ function renderBoxerModalEdit() {
 
     <div style="display:flex;gap:12px;justify-content:flex-end">
       <button class="btn btn-secondary btn-sm" onclick="renderBoxerModalView()">Annuler</button>
-      <button class="btn btn-primary" style="width:auto" onclick="saveBoxerEdit(${b.user_id})">💾 Enregistrer les modifications</button>
+      <button class="btn btn-primary" style="width:auto" onclick="saveBoxerEdit(${b.user_id})">Enregistrer les modifications</button>
     </div>
   `;
 }
@@ -282,7 +303,7 @@ async function saveBoxerEdit(userId) {
     weight:  parseFloat(document.getElementById('eb_weight').value) || null,
     weight_category:      document.getElementById('eb_cat').value,
     gender:               document.getElementById('eb_gender').value || null,
-    competition_category: calcCompCat(document.getElementById('eb_dob').value) || null,
+    competition_category: document.getElementById('eb_compcat')?.value || calcCompCat(document.getElementById('eb_dob').value) || null,
   };
 
   const res = await apiFetch(`/api/coach/boxers/${userId}`, {
@@ -407,7 +428,8 @@ function openCreateBoxerModal() {
       </div>
       <div class="form-group">
         <label>Date de naissance</label>
-        <input type="date" id="nb_dob" onchange="onDobChange('nb_dob','nb_compcat')">
+        <input type="date" id="nb_dob" onchange="onDobChange('nb_dob','nb_compcat','nb_gender','nb_cat')">
+        <input type="hidden" id="nb_compcat" value="">
       </div>
       <div class="form-group">
         <label>Numéro de licence</label>
@@ -441,12 +463,12 @@ function openCreateBoxerModal() {
         <label>Catégorie de poids</label>
         <select id="nb_cat">
           <option value="">— Sélectionner —</option>
-          ${WEIGHT_CATS.map(c => `<option value="${c}">${c}</option>`).join('')}
+          ${WEIGHT_CATS_ELITE_H.map(c => `<option value="${c}">${c}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
         <label>Sexe</label>
-        <select id="nb_gender">
+        <select id="nb_gender" onchange="onGenderChange('nb_gender','nb_compcat','nb_cat')">
           <option value="">— Sélectionner —</option>
           <option value="Homme">♂ Homme</option>
           <option value="Femme">♀ Femme</option>
@@ -483,7 +505,7 @@ async function saveNewBoxer() {
     weight:  parseFloat(document.getElementById('nb_weight').value) || null,
     weight_category:      document.getElementById('nb_cat').value || null,
     gender:               document.getElementById('nb_gender').value || null,
-    competition_category: calcCompCat(document.getElementById('nb_dob').value) || null,
+    competition_category: document.getElementById('nb_compcat')?.value || calcCompCat(document.getElementById('nb_dob').value) || null,
   };
 
   const res = await apiFetch('/api/coach/boxers', { method: 'POST', body: JSON.stringify(body) });

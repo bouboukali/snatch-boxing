@@ -1,13 +1,13 @@
 // ===== CALENDAR =====
 
 const EV_TYPES = {
-  boxe:      { label: 'Boxe',       icon: '🥊', css: 'ev-boxe'      },
-  condition: { label: 'Condition',  icon: '💪', css: 'ev-condition'  },
-  muscu:     { label: 'Muscu',      icon: '🏋️', css: 'ev-muscu'     },
-  sparring:  { label: 'Sparring',   icon: '🤜', css: 'ev-sparring'   },
-  cardio:    { label: 'Cardio',     icon: '🏃', css: 'ev-cardio'     },
-  combat:    { label: 'Combat',     icon: '🏆', css: 'ev-combat'     },
-  recreant:  { label: 'Récréant',   icon: '🎯', css: 'ev-recreant'   },
+  boxe:      { label: 'Boxe',       icon: '', css: 'ev-boxe'      },
+  condition: { label: 'Condition',  icon: '', css: 'ev-condition'  },
+  muscu:     { label: 'Muscu',      icon: '', css: 'ev-muscu'     },
+  sparring:  { label: 'Sparring',   icon: '', css: 'ev-sparring'   },
+  cardio:    { label: 'Cardio',     icon: '', css: 'ev-cardio'     },
+  combat:    { label: 'Combat',     icon: '', css: 'ev-combat'     },
+  recreant:  { label: 'Récréant',   icon: '', css: 'ev-recreant'   },
 };
 
 const EV_COLORS = {
@@ -16,7 +16,7 @@ const EV_COLORS = {
 };
 
 function getEvType(type) {
-  return EV_TYPES[type] || { label: type || 'Autre', icon: '🎯', css: 'ev-recreant' };
+  return EV_TYPES[type] || { label: type || 'Autre', icon: '', css: 'ev-recreant' };
 }
 function getEvColor(type) {
   return EV_COLORS[type] || '#888888';
@@ -91,7 +91,7 @@ function renderEventsList() {
   if (!el) return;
 
   if (!allEvents.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>Aucun événement planifié.</p></div>`;
+    el.innerHTML = `<div class="empty-state"><p>Aucun événement planifié.</p></div>`;
     return;
   }
 
@@ -122,17 +122,17 @@ function eventCardHTML(ev, showEdit = false) {
 
   const duration = calcDurationLabel(ev.start_time, ev.end_time);
 
-  const rsvpIcon = { accepted: '✅', declined: '❌', pending: '⏳' };
+  const rsvpIcon = { accepted: '✓', declined: '✗', pending: '…' };
   const inviteesHtml = ev.invite_all
     ? `<span class="invitee-chip" style="background:var(--gold-dim);color:var(--primary)">Tous les boxeurs</span>
        ${ev.rsvp_counts && (ev.rsvp_counts.accepted + ev.rsvp_counts.declined + ev.rsvp_counts.pending) > 0 ? `
-         <span class="invitee-chip" style="background:rgba(46,204,113,0.15);color:#2ecc71">✅ ${ev.rsvp_counts.accepted}</span>
-         <span class="invitee-chip" style="background:rgba(231,76,60,0.15);color:#e74c3c">❌ ${ev.rsvp_counts.declined}</span>
-         <span class="invitee-chip" style="background:rgba(255,255,255,0.05);color:var(--text-muted)">⏳ ${ev.rsvp_counts.pending}</span>
+         <span class="invitee-chip" style="background:rgba(46,204,113,0.15);color:#2ecc71">${ev.rsvp_counts.accepted}</span>
+         <span class="invitee-chip" style="background:rgba(231,76,60,0.15);color:#e74c3c">${ev.rsvp_counts.declined}</span>
+         <span class="invitee-chip" style="background:rgba(255,255,255,0.05);color:var(--text-muted)">${ev.rsvp_counts.pending}</span>
        ` : ''}`
     : (ev.invitees || []).map(b => {
         const status = b.rsvp_status || 'pending';
-        const icon = rsvpIcon[status] || '⏳';
+        const icon = rsvpIcon[status] || '…';
         const bg = status === 'accepted' ? 'rgba(46,204,113,0.15)' : status === 'declined' ? 'rgba(231,76,60,0.15)' : 'rgba(255,255,255,0.05)';
         const col = status === 'accepted' ? '#2ecc71' : status === 'declined' ? '#e74c3c' : 'var(--text-secondary)';
         return `<span class="invitee-chip" style="background:${bg};color:${col}">${icon} ${b.first_name||b.email}</span>`;
@@ -142,19 +142,19 @@ function eventCardHTML(ev, showEdit = false) {
     <div class="event-card">
       <div class="event-type-bar" style="background:${color}"></div>
       <div class="event-card-main">
-        <div class="event-card-title">${t.icon} ${ev.title} ${ev.is_private ? '<span style="font-size:11px;color:var(--text-muted)">🔒</span>' : ''}</div>
+        <div class="event-card-title">${t.icon} ${ev.title} ${ev.is_private ? '<span style="font-size:11px;color:var(--text-muted)">Privé</span>' : ''}</div>
         <div class="event-card-meta">
-          <span>📅 ${dateStr}${timeStr ? ` · ⏰ ${timeStr}` : ''}</span>
+          <span>${dateStr}${timeStr ? ` · ${timeStr}` : ''}</span>
           ${duration ? `<span class="duration-badge" style="font-size:11px;padding:2px 8px">⏱ ${duration}</span>` : ''}
-          ${ev.location ? `<span>📍 ${ev.location}${ev.country && ev.country !== 'France' ? `, ${ev.country}` : ''}</span>` : ''}
+          ${ev.location ? `<span>${ev.location}${ev.country && ev.country !== 'France' ? `, ${ev.country}` : ''}</span>` : ''}
           <span class="badge" style="background:rgba(0,0,0,0.3);color:${color};font-size:11px">${t.label}</span>
         </div>
         ${ev.description ? `<div class="event-card-desc">${ev.description}</div>` : ''}
         ${inviteesHtml ? `<div class="event-card-invitees">${inviteesHtml}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-self:flex-start">
-        <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3)" onclick="openEventDetail(${ev.id})">👁 Détails</button>
-        ${showEdit ? `<button class="btn btn-sm btn-secondary" onclick="openEventModal(${ev.id})">✏️ Modifier</button>` : ''}
+        <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3)" onclick="openEventDetail(${ev.id})">Détails</button>
+        ${showEdit ? `<button class="btn btn-sm btn-secondary" onclick="openEventModal(${ev.id})">Modifier</button>` : ''}
       </div>
     </div>
   `;
@@ -540,9 +540,9 @@ async function openEventDetail(eventId) {
   const duration = calcDurationLabel(ev.start_time, ev.end_time);
 
   document.getElementById('evDetailTitle').innerHTML =
-    `${t.icon} ${ev.title} ${ev.is_private ? '<span style="font-size:13px;color:var(--text-muted)">🔒 Privé</span>' : ''}`;
+    `${t.icon} ${ev.title} ${ev.is_private ? '<span style="font-size:13px;color:var(--text-muted)">Privé</span>' : ''}`;
 
-  const rsvpIcon  = { accepted: '✅', declined: '❌', pending: '⏳' };
+  const rsvpIcon  = { accepted: '✓', declined: '✗', pending: '…' };
   const rsvpLabel = { accepted: 'Accepté', declined: 'Refusé', pending: 'En attente' };
   const rsvpBg    = { accepted: 'rgba(46,204,113,0.12)', declined: 'rgba(231,76,60,0.12)', pending: 'rgba(255,255,255,0.05)' };
   const rsvpCol   = { accepted: '#2ecc71', declined: '#e74c3c', pending: 'var(--text-muted)' };
@@ -554,9 +554,9 @@ async function openEventDetail(eventId) {
     ? '<p style="color:var(--text-muted);font-size:14px">Aucun boxeur invité.</p>'
     : `
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(46,204,113,0.15);color:#2ecc71">✅ ${counts.accepted} accepté${counts.accepted > 1 ? 's' : ''}</span>
-        <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(231,76,60,0.15);color:#e74c3c">❌ ${counts.declined} refusé${counts.declined > 1 ? 's' : ''}</span>
-        <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(255,255,255,0.07);color:var(--text-muted)">⏳ ${counts.pending} en attente</span>
+        <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(46,204,113,0.15);color:#2ecc71">${counts.accepted} accepté${counts.accepted > 1 ? 's' : ''}</span>
+        <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(231,76,60,0.15);color:#e74c3c">${counts.declined} refusé${counts.declined > 1 ? 's' : ''}</span>
+        <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(255,255,255,0.07);color:var(--text-muted)">${counts.pending} en attente</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;padding-right:4px">
         ${ev.invitees.map(b => {
@@ -564,7 +564,7 @@ async function openEventDetail(eventId) {
           const name = (b.first_name || b.last_name) ? `${b.first_name||''} ${b.last_name||''}`.trim() : b.email;
           return `
             <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;background:${rsvpBg[status]};border:1px solid ${rsvpCol[status]}22">
-              <div style="width:34px;height:34px;border-radius:50%;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🥊</div>
+              <div style="width:34px;height:34px;border-radius:50%;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0"></div>
               <div style="flex:1;min-width:0">
                 <div style="font-weight:600;font-size:14px">${name}</div>
                 <div style="font-size:12px;color:var(--text-muted)">${b.email}</div>
@@ -579,12 +579,12 @@ async function openEventDetail(eventId) {
   document.getElementById('evDetailBody').innerHTML = `
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
       <span style="padding:4px 14px;border-radius:20px;font-size:13px;font-weight:700;background:${color}22;color:${color}">${t.icon} ${t.label}</span>
-      ${ev.is_private ? '<span style="padding:4px 14px;border-radius:20px;font-size:12px;background:rgba(255,255,255,0.06);color:var(--text-muted)">🔒 Privé</span>' : '<span style="padding:4px 14px;border-radius:20px;font-size:12px;background:rgba(255,255,255,0.06);color:var(--text-muted)">🌐 Public</span>'}
+      ${ev.is_private ? '<span style="padding:4px 14px;border-radius:20px;font-size:12px;background:rgba(255,255,255,0.06);color:var(--text-muted)">Privé</span>' : '<span style="padding:4px 14px;border-radius:20px;font-size:12px;background:rgba(255,255,255,0.06);color:var(--text-muted)">Public</span>'}
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div style="padding:12px 16px;background:var(--input-bg);border-radius:8px;border:1px solid var(--border)">
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">📅 Date</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Date</div>
         <div style="font-size:14px;font-weight:600">${sameDay ? startFmt : `${startFmt} → ${endFmt}`}</div>
       </div>
       ${ev.start_time ? `
@@ -594,14 +594,14 @@ async function openEventDetail(eventId) {
       </div>` : ''}
       ${ev.location ? `
       <div style="padding:12px 16px;background:var(--input-bg);border-radius:8px;border:1px solid var(--border);grid-column:1/-1">
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">📍 Lieu</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Lieu</div>
         <div style="font-size:14px;font-weight:600">${ev.location}${ev.country && ev.country !== 'France' ? `, ${ev.country}` : ''}</div>
       </div>` : ''}
     </div>
 
     ${ev.description ? `
     <div style="padding:14px 16px;background:var(--input-bg);border-radius:8px;border:1px solid var(--border);margin-bottom:16px">
-      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📝 Description</div>
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Description</div>
       <p style="font-size:14px;line-height:1.6;color:var(--text)">${ev.description}</p>
     </div>` : ''}
 
@@ -613,7 +613,7 @@ async function openEventDetail(eventId) {
 
     ${currentRole === 'coach' ? `
     <div style="margin-top:20px;display:flex;justify-content:flex-end">
-      <button class="btn btn-sm btn-secondary" onclick="closeEventDetail();openEventModal(${ev.id})">✏️ Modifier</button>
+      <button class="btn btn-sm btn-secondary" onclick="closeEventDetail();openEventModal(${ev.id})">Modifier</button>
     </div>` : ''}
   `;
 

@@ -76,7 +76,7 @@ async function loadDocuments() {
   count.textContent = `${docs.length} document${docs.length > 1 ? 's' : ''}`;
 
   if (!docs.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📂</div><p>Aucun document déposé pour l'instant.</p></div>`;
+    list.innerHTML = `<div class="empty-state"><p>Aucun document déposé pour l'instant.</p></div>`;
     return;
   }
 
@@ -87,7 +87,7 @@ async function loadDocuments() {
         <div class="doc-name">${d.original_name}</div>
         <div class="doc-meta">${d.document_type} — ${new Date(d.uploaded_at).toLocaleDateString('fr-FR')}</div>
       </div>
-      <button class="btn btn-danger btn-sm btn-icon" onclick="deleteDoc(${d.id})" title="Supprimer">🗑</button>
+      <button class="btn btn-danger btn-sm btn-icon" onclick="deleteDoc(${d.id})" title="Supprimer">✕</button>
     </div>
   `).join('');
 }
@@ -108,7 +108,7 @@ async function uploadDocument(file) {
     body: formData
   });
 
-  zone.innerHTML = `<div class="upload-icon">📎</div><p><strong>Cliquez</strong> ou glissez un fichier ici</p><p style="margin-top:6px;font-size:12px">PDF, JPG, PNG, DOC — max 10 Mo</p>`;
+  zone.innerHTML = `<p><strong>Cliquez</strong> ou glissez un fichier ici</p><p style="margin-top:6px;font-size:12px">PDF, JPG, PNG, DOC — max 10 Mo</p>`;
   document.getElementById('fileInput').value = '';
 
   if (res.ok) {

@@ -105,7 +105,7 @@ function initApp(role, email) {
   currentUser = email;
   document.getElementById('authPage').style.display = 'none';
   document.getElementById('appLayout').style.display = 'flex';
-  document.getElementById('sidebarRole').textContent = role === 'coach' ? '🏆 Coach' : role === 'admin' ? '🛡 Admin' : '🥊 Boxeur';
+  document.getElementById('sidebarRole').textContent = role === 'coach' ? 'Coach' : role === 'admin' ? 'Admin' : 'Boxeur';
   document.getElementById('sidebarEmail').textContent = email;
 
   buildNav(role);
@@ -119,7 +119,7 @@ function initApp(role, email) {
     btn.id = 'backToAdminBtn';
     btn.className = 'logout-btn';
     btn.style.cssText = 'background:rgba(201,160,32,0.15);color:var(--primary);border:1px solid rgba(201,160,32,0.3);margin-bottom:8px';
-    btn.innerHTML = '🛡 Retour admin';
+    btn.innerHTML = 'Retour admin';
     btn.onclick = returnToAdmin;
     footer.insertBefore(btn, footer.firstChild);
   }
@@ -140,22 +140,22 @@ function buildNav(role) {
   const nav = document.getElementById('sidebarNav');
   const items = role === 'coach'
     ? [
-        { id: 'coach-dashboard', icon: '📊', label: 'Tableau de bord' },
-        { id: 'coach-boxers',    icon: '👥', label: 'Mes boxeurs' },
-        { id: 'coach-calendar',  icon: '📅', label: 'Calendrier' },
-        { id: 'coach-training',  icon: '📋', label: 'Fiches entraînement' },
-        { id: 'coach-payments',  icon: '💳', label: 'Paiements' },
+        { id: 'coach-dashboard', icon: '', label: 'Tableau de bord' },
+        { id: 'coach-boxers',    icon: '', label: 'Mes boxeurs' },
+        { id: 'coach-calendar',  icon: '', label: 'Calendrier' },
+        { id: 'coach-training',  icon: '', label: 'Fiches entraînement' },
+        { id: 'coach-payments',  icon: '', label: 'Paiements' },
       ]
     : role === 'admin'
     ? [
-        { id: 'admin-users', icon: '🛡', label: 'Utilisateurs' },
+        { id: 'admin-users', icon: '', label: 'Utilisateurs' },
       ]
     : [
-        { id: 'boxer-profile',   icon: '👤', label: 'Mon profil' },
-        { id: 'boxer-events',    icon: '📅', label: 'Mes événements' },
-        { id: 'boxer-training',  icon: '📋', label: 'Fiches entraînement' },
-        { id: 'boxer-documents', icon: '📂', label: 'Mes documents' },
-        { id: 'boxer-payments',  icon: '💳', label: 'Mes paiements' },
+        { id: 'boxer-profile',   icon: '', label: 'Mon profil' },
+        { id: 'boxer-events',    icon: '', label: 'Mes événements' },
+        { id: 'boxer-training',  icon: '', label: 'Fiches entraînement' },
+        { id: 'boxer-documents', icon: '', label: 'Mes documents' },
+        { id: 'boxer-payments',  icon: '', label: 'Mes paiements' },
       ];
 
   nav.innerHTML = items.map(i => `
@@ -208,11 +208,7 @@ function getInitials(b) {
 }
 
 function docIcon(type) {
-  if (!type) return '📄';
-  if (type.includes('médical') || type.includes('aptitude')) return '🏥';
-  if (type.includes('Licence')) return '🪪';
-  if (type.includes('Passeport') || type.includes('identité')) return '🛂';
-  return '📄';
+  return '';
 }
 
 function showFormError(elId, msg) {
