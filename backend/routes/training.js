@@ -70,12 +70,18 @@ router.post('/', requireCoach, async (req, res) => {
   if (exercises && exercises.length) {
     for (let i = 0; i < exercises.length; i++) {
       const ex = exercises[i];
-      if (ex.name) {
-        await db.query(
-          'INSERT INTO training_exercises (sheet_id, order_idx, name, sets, reps, duration, rest, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-          [sheetId, i + 1, ex.name, ex.sets || null, ex.reps || null, ex.duration || null, ex.rest || null, ex.notes || null]
-        );
-      }
+      await db.query(
+        `INSERT INTO training_exercises
+          (sheet_id, order_idx, name, sets, reps, duration, rest, notes,
+           group_id, group_type, block_name, session_number,
+           target_set1, target_set2, target_set3, is_rest, rest_label)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+        [sheetId, i + 1, ex.name || null, ex.sets || null, ex.reps || null,
+         ex.duration || null, ex.rest || null, ex.notes || null,
+         ex.group_id || null, ex.group_type || null, ex.block_name || null,
+         ex.session_number || 1, ex.target_set1 || null, ex.target_set2 || null,
+         ex.target_set3 || null, ex.is_rest ? 1 : 0, ex.rest_label || null]
+      );
     }
   }
 
@@ -116,23 +122,68 @@ router.delete('/:id', requireCoach, async (req, res) => {
 router.post('/:id/exercises', requireCoach, async (req, res) => {
   const [exists] = await db.query('SELECT id FROM training_sheets WHERE id = $1', [req.params.id]);
   if (!exists) return res.status(404).json({ error: 'Fiche introuvable' });
-  const { name, sets, reps, duration, rest, notes } = req.body;
-  if (!name) return res.status(400).json({ error: 'Nom requis' });
+  const { name, sets, reps, duration, rest, notes, group_id, group_type,
+          block_name, session_number, target_set1, target_set2, target_set3,
+          is_rest, rest_label } = req.body;
+  if (!is_rest && !name) return res.status(400).json({ error: 'Nom requis' });
 
   const [maxRow] = await db.query('SELECT MAX(order_idx) as m FROM training_exercises WHERE sheet_id = $1', [req.params.id]);
   const maxOrder = maxRow.m || 0;
 
   const [ex] = await db.query(
-    'INSERT INTO training_exercises (sheet_id, order_idx, name, sets, reps, duration, rest, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-    [req.params.id, maxOrder + 1, name, sets || null, reps || null, duration || null, rest || null, notes || null]
+    `INSERT INTO training_exercises
+      (sheet_id, order_idx, name, sets, reps, duration, rest, notes,
+       group_id, group_type, block_name, session_number,
+       target_set1, target_set2, target_set3, is_rest, rest_label)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+    [req.params.id, maxOrder + 1, name || null, sets || null, reps || null,
+     duration || null, rest || null, notes || null,
+     group_id || null, group_type || null, block_name || null,
+     session_number || 1, target_set1 || null, target_set2 || null, target_set3 || null,
+     is_rest ? 1 : 0, rest_label || null]
   );
   res.status(201).json(ex);
 });
 
+router.post('/:id/exercises/batch', requireCoach, async (req, res) => {
+  const [exists] = await db.query('SELECT id FROM training_sheets WHERE id = $1', [req.params.id]);
+  if (!exists) return res.status(404).json({ error: 'Fiche introuvable' });
+  const { exercises } = req.body;
+  if (!exercises || !exercises.length) return res.status(400).json({ error: 'Exercices requis' });
+
+  await db.query('DELETE FROM training_exercises WHERE sheet_id = $1', [req.params.id]);
+  for (let i = 0; i < exercises.length; i++) {
+    const ex = exercises[i];
+    await db.query(
+      `INSERT INTO training_exercises
+        (sheet_id, order_idx, name, sets, reps, duration, rest, notes,
+         group_id, group_type, block_name, session_number,
+         target_set1, target_set2, target_set3, is_rest, rest_label)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+      [req.params.id, i + 1, ex.name || null, ex.sets || null, ex.reps || null,
+       ex.duration || null, ex.rest || null, ex.notes || null,
+       ex.group_id || null, ex.group_type || null, ex.block_name || null,
+       ex.session_number || 1, ex.target_set1 || null, ex.target_set2 || null,
+       ex.target_set3 || null, ex.is_rest ? 1 : 0, ex.rest_label || null]
+    );
+  }
+  res.json({ success: true });
+});
+
 router.put('/:id/exercises/:exId', requireCoach, async (req, res) => {
-  const { name, sets, reps, duration, rest, notes } = req.body;
-  await db.query('UPDATE training_exercises SET name=$1, sets=$2, reps=$3, duration=$4, rest=$5, notes=$6 WHERE id=$7 AND sheet_id=$8',
-    [name, sets || null, reps || null, duration || null, rest || null, notes || null, req.params.exId, req.params.id]);
+  const { name, sets, reps, duration, rest, notes, group_id, group_type,
+          block_name, session_number, target_set1, target_set2, target_set3,
+          is_rest, rest_label } = req.body;
+  await db.query(
+    `UPDATE training_exercises SET
+      name=$1, sets=$2, reps=$3, duration=$4, rest=$5, notes=$6,
+      group_id=$7, group_type=$8, block_name=$9, session_number=$10,
+      target_set1=$11, target_set2=$12, target_set3=$13, is_rest=$14, rest_label=$15
+     WHERE id=$16 AND sheet_id=$17`,
+    [name || null, sets || null, reps || null, duration || null, rest || null,
+     notes || null, group_id || null, group_type || null, block_name || null,
+     session_number || 1, target_set1 || null, target_set2 || null, target_set3 || null,
+     is_rest ? 1 : 0, rest_label || null, req.params.exId, req.params.id]);
   res.json({ success: true });
 });
 

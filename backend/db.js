@@ -134,6 +134,16 @@ async function initDb() {
   // Migrations (appels séparés pour compatibilité pooler Neon)
   await pool.query('ALTER TABLE boxer_profiles ADD COLUMN IF NOT EXISTS gender TEXT');
   await pool.query('ALTER TABLE boxer_profiles ADD COLUMN IF NOT EXISTS competition_category TEXT');
+  await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS group_id TEXT');
+  await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS group_type TEXT');
+  await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS block_name TEXT');
+  await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS session_number INTEGER DEFAULT 1');
+  await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS target_set1 TEXT');
+  await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS target_set2 TEXT');
+  await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS target_set3 TEXT');
+  await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS is_rest INTEGER DEFAULT 0');
+  await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS rest_label TEXT');
+  await pool.query("ALTER TABLE training_exercises ALTER COLUMN name DROP NOT NULL");
 
   // Seed default coach
   const [coachExists] = await query("SELECT id FROM users WHERE role='coach' LIMIT 1");

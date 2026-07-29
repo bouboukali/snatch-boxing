@@ -75,10 +75,12 @@ function renderTrainingSheets(sheets) {
 }
 
 let _trDraftExercises = [];
+let _trDraftBlocks = []; // [{name, color}]
 
 async function openTrainingModal(sheetId = null) {
   editingSheetId = sheetId;
   _trDraftExercises = [];
+  _trDraftBlocks = [];
   const modal = document.getElementById('trainingModal');
   document.getElementById('trainingModalTitle').textContent = sheetId ? 'Modifier la fiche' : 'Nouvelle fiche d\'entraînement';
 
@@ -87,8 +89,18 @@ async function openTrainingModal(sheetId = null) {
     const res = await apiFetch(`/api/training/${sheetId}`);
     if (!res) return;
     sheet = await res.json();
-    if (sheet.exercises) _trDraftExercises = sheet.exercises.map(e => ({ ...e }));
+    if (sheet.exercises) {
+      _trDraftExercises = sheet.exercises.map(e => ({ ...e }));
+      const seen = new Set();
+      _trDraftExercises.forEach(e => {
+        if (e.block_name && !seen.has(e.block_name)) {
+          seen.add(e.block_name);
+          _trDraftBlocks.push({ name: e.block_name });
+        }
+      });
+    }
   }
+  if (!_trDraftBlocks.length) _trDraftBlocks = [{ name: 'BLOC A' }];
 
   let boxers = allBoxers;
   if (!boxers.length) {
@@ -151,9 +163,11 @@ async function openTrainingModal(sheetId = null) {
       </div>
     </div>
 
-    <div class="section-title" style="margin-bottom:10px">Exercices</div>
-    <div id="tr_exercises_list" style="margin-bottom:10px"></div>
-    <button class="btn btn-sm btn-secondary" style="margin-bottom:16px" onclick="addTrDraftExercise()">➕ Ajouter un exercice</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="section-title" style="margin:0">Exercices par blocs</div>
+      <button class="btn btn-sm" style="background:rgba(201,160,32,0.12);color:var(--primary);border:1px solid rgba(201,160,32,0.3)" onclick="addTrBlock()">+ Nouveau bloc</button>
+    </div>
+    <div id="tr_exercises_list" style="margin-bottom:16px"></div>
 
     <div style="display:flex;justify-content:flex-end;gap:10px">
       <button class="btn btn-secondary btn-sm" onclick="closeTrainingModal()">Annuler</button>
@@ -173,68 +187,125 @@ function renderTrExercisePlaceholders() {
   renderTrDraftExercises();
 }
 
-function renderTrDraftExercises() {
-  const type = document.getElementById('tr_type')?.value || 'muscu';
-  const isCardio = ['cardio', 'condition'].includes(type);
-  const isBoxe   = ['boxe', 'sparring'].includes(type);
-  const colSets = isBoxe ? 'Rounds' : 'Séries';
-  const colReps = isCardio ? 'Durée' : isBoxe ? 'Durée/round' : 'Rép.';
+const BLOCK_COLORS = ['#C9A020','#3498db','#e74c3c','#2ecc71','#9b59b6','#e67e22','#1abc9c'];
 
+function renderTrDraftExercises() {
   const el = document.getElementById('tr_exercises_list');
   if (!el) return;
 
-  if (!_trDraftExercises.length) {
-    el.innerHTML = `<p style="font-size:13px;color:var(--text-muted);padding:8px 0">Aucun exercice. Cliquez sur "Ajouter" ci-dessous.</p>`;
-    return;
-  }
+  let html = '';
+  _trDraftBlocks.forEach((block, bi) => {
+    const color = BLOCK_COLORS[bi % BLOCK_COLORS.length];
+    const blockExs = _trDraftExercises.filter(e => e.block_name === block.name);
 
-  el.innerHTML = `<div class="table-wrapper"><table>
-    <thead><tr>
-      <th style="width:32px">#</th>
-      <th>Exercice</th>
-      <th style="width:70px">${colSets}</th>
-      <th style="width:80px">${colReps}</th>
-      <th style="width:90px">Récup.</th>
-      <th style="width:32px"></th>
-    </tr></thead>
-    <tbody>
-      ${_trDraftExercises.map((ex, i) => `
-        <tr>
-          <td style="color:var(--text-muted);font-size:12px">${i+1}</td>
-          <td>
-            <input type="text" value="${ex.name||''}" oninput="_trDraftExercises[${i}].name=this.value"
-              placeholder="Nom de l'exercice"
-              style="width:100%;padding:5px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px">
-            <input type="text" value="${ex.notes||''}" oninput="_trDraftExercises[${i}].notes=this.value"
-              placeholder="Note (optionnel)"
-              style="width:100%;padding:3px 8px;margin-top:3px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:11px">
-          </td>
-          <td><input type="text" value="${ex.sets||''}" oninput="_trDraftExercises[${i}].sets=this.value"
-            style="width:100%;padding:5px 6px;background:var(--input-bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;text-align:center"></td>
-          <td><input type="text" value="${ex.reps||ex.duration||''}" oninput="_trDraftExercises[${i}].reps=this.value"
-            style="width:100%;padding:5px 6px;background:var(--input-bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;text-align:center"></td>
-          <td><input type="text" value="${ex.rest||''}" oninput="_trDraftExercises[${i}].rest=this.value"
-            style="width:100%;padding:5px 6px;background:var(--input-bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;text-align:center"></td>
-          <td><button class="btn btn-sm btn-danger" style="padding:3px 6px" onclick="_trDraftExercises.splice(${i},1);renderTrDraftExercises()">✕</button></td>
-        </tr>
-      `).join('')}
-    </tbody>
-  </table></div>`;
+    html += `<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${color}18;border-bottom:1px solid ${color}44">
+        <input type="text" value="${block.name}" oninput="_trDraftBlocks[${bi}].name=this.value;_trDraftExercises.forEach(e=>{ if(e.block_name===_trDraftBlocks[${bi}].name) e.block_name=this.value; });renderTrDraftExercises()"
+          style="flex:1;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:${color};background:transparent;border:none;border-bottom:1px dashed ${color}44;padding:2px 4px;outline:none"
+          placeholder="Nom du bloc (ex: BLOC A - FORCE)">
+        <button class="btn btn-sm" style="padding:2px 8px;background:transparent;color:${color};border:1px solid ${color}55;font-size:11px" onclick="addTrRestRow('${block.name}')">+ Récupération</button>
+        <button class="btn btn-sm" style="padding:2px 8px;background:${color}22;color:${color};border:1px solid ${color}55;font-size:11px" onclick="addTrDraftExercise('${block.name}')">+ Exercice</button>
+        ${_trDraftBlocks.length > 1 ? `<button class="btn btn-sm btn-danger" style="padding:2px 6px;font-size:11px" onclick="removeTrBlock(${bi})">✕</button>` : ''}
+      </div>`;
+
+    if (!blockExs.length) {
+      html += `<p style="font-size:13px;color:var(--text-muted);padding:10px 14px;margin:0">Aucun exercice. Cliquez sur "+ Exercice".</p>`;
+    } else {
+      html += `<div class="table-wrapper"><table style="font-size:13px">
+        <thead><tr>
+          <th style="width:28px">#</th>
+          <th>Exercice / Note</th>
+          <th style="width:60px">Séries</th>
+          <th style="width:70px">Rép.</th>
+          <th style="width:90px">Série 1</th>
+          <th style="width:90px">Série 2</th>
+          <th style="width:90px">Série 3</th>
+          <th style="width:80px">Récup.</th>
+          <th style="width:28px"></th>
+        </tr></thead><tbody>`;
+
+      blockExs.forEach((ex) => {
+        const gi = _trDraftExercises.indexOf(ex);
+        if (ex.is_rest) {
+          html += `<tr style="background:rgba(201,160,32,0.06)">
+            <td colspan="8" style="padding:6px 10px">
+              <input type="text" value="${ex.rest_label||''}" oninput="_trDraftExercises[${gi}].rest_label=this.value"
+                placeholder="Ex: Récupération 3 min"
+                style="width:100%;font-style:italic;color:var(--primary);background:transparent;border:none;border-bottom:1px dashed rgba(201,160,32,0.3);font-size:12px;padding:2px 4px;outline:none">
+            </td>
+            <td><button class="btn btn-sm btn-danger" style="padding:2px 5px" onclick="_trDraftExercises.splice(${gi},1);renderTrDraftExercises()">✕</button></td>
+          </tr>`;
+        } else {
+          const rowNum = blockExs.filter((e,j) => !e.is_rest && blockExs.indexOf(e) <= blockExs.indexOf(ex)).length;
+          html += `<tr>
+            <td style="color:var(--text-muted)">${rowNum}</td>
+            <td>
+              <input type="text" value="${ex.name||''}" oninput="_trDraftExercises[${gi}].name=this.value"
+                placeholder="Nom de l'exercice"
+                style="width:100%;padding:4px 6px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
+              <input type="text" value="${ex.notes||''}" oninput="_trDraftExercises[${gi}].notes=this.value"
+                placeholder="Note (optionnel)"
+                style="width:100%;padding:2px 6px;margin-top:2px;background:transparent;border:none;border-bottom:1px dashed var(--border);color:var(--text-muted);font-size:11px">
+            </td>
+            <td><input type="text" value="${ex.sets||''}" oninput="_trDraftExercises[${gi}].sets=this.value"
+              style="width:100%;padding:4px 4px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
+            <td><input type="text" value="${ex.reps||''}" oninput="_trDraftExercises[${gi}].reps=this.value"
+              style="width:100%;padding:4px 4px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
+            <td><input type="text" value="${ex.target_set1||''}" oninput="_trDraftExercises[${gi}].target_set1=this.value"
+              placeholder="ex: 6x70kg"
+              style="width:100%;padding:4px 4px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;text-align:center"></td>
+            <td><input type="text" value="${ex.target_set2||''}" oninput="_trDraftExercises[${gi}].target_set2=this.value"
+              placeholder="ex: 6x75kg"
+              style="width:100%;padding:4px 4px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;text-align:center"></td>
+            <td><input type="text" value="${ex.target_set3||''}" oninput="_trDraftExercises[${gi}].target_set3=this.value"
+              placeholder="ex: 6x80kg"
+              style="width:100%;padding:4px 4px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;text-align:center"></td>
+            <td><input type="text" value="${ex.rest||''}" oninput="_trDraftExercises[${gi}].rest=this.value"
+              style="width:100%;padding:4px 4px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
+            <td><button class="btn btn-sm btn-danger" style="padding:2px 5px" onclick="_trDraftExercises.splice(${gi},1);renderTrDraftExercises()">✕</button></td>
+          </tr>`;
+        }
+      });
+      html += '</tbody></table></div>';
+    }
+    html += '</div>';
+  });
+
+  el.innerHTML = html;
 }
 
-function addTrDraftExercise() {
-  _trDraftExercises.push({ name: '', sets: '', reps: '', duration: '', rest: '', notes: '' });
+function addTrBlock() {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const name = 'BLOC ' + (letters[_trDraftBlocks.length] || (_trDraftBlocks.length + 1));
+  _trDraftBlocks.push({ name });
   renderTrDraftExercises();
-  setTimeout(() => {
-    const inputs = document.querySelectorAll('#tr_exercises_list input[type=text]');
-    if (inputs.length) inputs[inputs.length - 5]?.focus();
-  }, 50);
+}
+
+function removeTrBlock(bi) {
+  const blockName = _trDraftBlocks[bi].name;
+  _trDraftExercises = _trDraftExercises.filter(e => e.block_name !== blockName);
+  _trDraftBlocks.splice(bi, 1);
+  renderTrDraftExercises();
+}
+
+function addTrDraftExercise(blockName) {
+  if (!blockName) blockName = _trDraftBlocks[0]?.name || 'BLOC A';
+  _trDraftExercises.push({ name: '', sets: '', reps: '', rest: '', notes: '',
+    block_name: blockName, session_number: 1,
+    target_set1: '', target_set2: '', target_set3: '', is_rest: false });
+  renderTrDraftExercises();
+}
+
+function addTrRestRow(blockName) {
+  _trDraftExercises.push({ is_rest: true, rest_label: '', block_name: blockName });
+  renderTrDraftExercises();
 }
 
 function closeTrainingModal() {
   document.getElementById('trainingModal').classList.remove('open');
   editingSheetId = null;
   _trDraftExercises = [];
+  _trDraftBlocks = [];
 }
 
 async function saveTrainingSheet() {
@@ -245,7 +316,7 @@ async function saveTrainingSheet() {
 
   const is_public = document.getElementById('tr_public').value === '1';
   const boxer_ids = is_public ? [] : Array.from(document.querySelectorAll('#tr_boxer_section input[type=checkbox]:checked')).map(c => parseInt(c.value));
-  const exercises = _trDraftExercises.filter(e => e.name?.trim());
+  const exercises = _trDraftExercises.filter(e => e.is_rest ? e.rest_label?.trim() : e.name?.trim());
 
   const body = {
     title,
@@ -257,18 +328,25 @@ async function saveTrainingSheet() {
     exercises,
   };
 
-  const url = editingSheetId ? `/api/training/${editingSheetId}` : '/api/training';
-  const method = editingSheetId ? 'PUT' : 'POST';
-  const res = await apiFetch(url, { method, body: JSON.stringify(body) });
-  if (!res || !res.ok) { showFormError('trainingFormError', 'Erreur lors de la sauvegarde.'); return; }
+  let sheetId = editingSheetId;
+  if (editingSheetId) {
+    const metaRes = await apiFetch(`/api/training/${editingSheetId}`, { method: 'PUT', body: JSON.stringify(body) });
+    if (!metaRes || !metaRes.ok) { showFormError('trainingFormError', 'Erreur lors de la sauvegarde.'); return; }
+    const batchRes = await apiFetch(`/api/training/${editingSheetId}/exercises/batch`, { method: 'POST', body: JSON.stringify({ exercises }) });
+    if (!batchRes || !batchRes.ok) { showFormError('trainingFormError', 'Erreur lors de la sauvegarde des exercices.'); return; }
+  } else {
+    const res = await apiFetch('/api/training', { method: 'POST', body: JSON.stringify(body) });
+    if (!res || !res.ok) { showFormError('trainingFormError', 'Erreur lors de la sauvegarde.'); return; }
+    const data = await res.json();
+    sheetId = data.id;
+  }
 
-  const data = await res.json();
   closeTrainingModal();
   showToast(editingSheetId ? 'Fiche mise à jour !' : 'Fiche créée !', 'success');
   await loadTrainingSheets();
 
-  if (!editingSheetId && data.id) {
-    const fresh = await apiFetch(`/api/training/${data.id}`);
+  if (sheetId) {
+    const fresh = await apiFetch(`/api/training/${sheetId}`);
     if (fresh) { _currentSheet = await fresh.json(); renderTrainingDetail(); document.getElementById('trainingDetailModal').classList.add('open'); }
   }
 }
@@ -308,77 +386,11 @@ function renderTrainingDetail() {
   const isCardio = ['cardio', 'condition'].includes(s.type);
   const isBoxe   = ['boxe', 'sparring'].includes(s.type);
 
-  const colSets     = isBoxe ? 'Rounds' : 'Séries';
-  const colReps     = isCardio ? 'Durée' : isBoxe ? 'Durée/round' : 'Répétitions';
-  const colDuration = isCardio ? 'Distance/intensité' : 'Temps sous tension';
-
-  const exercisesHtml = !s.exercises.length
-    ? `<div class="empty-state" style="padding:30px"><p>Aucun exercice${isCoach ? '. Ajoutez-en ci-dessous.' : '.'}</p></div>`
-    : `<div class="table-wrapper">
-        <table>
-          <thead><tr>
-            <th>#</th>
-            <th>Exercice</th>
-            <th>${colSets}</th>
-            <th>${colReps}</th>
-            <th>${colDuration}</th>
-            <th>Récupération</th>
-            ${isCoach ? '<th></th>' : ''}
-          </tr></thead>
-          <tbody>
-            ${s.exercises.map((ex, i) => `
-              <tr id="ex-row-${ex.id}">
-                <td style="color:var(--text-muted);font-size:13px">${i+1}</td>
-                <td style="font-weight:600">${ex.name}${ex.notes ? `<div style="font-size:12px;color:var(--text-muted);font-weight:400">${ex.notes}</div>` : ''}</td>
-                <td>${ex.sets ?? '—'}</td>
-                <td>${ex.reps ?? '—'}</td>
-                <td>${ex.duration ?? '—'}</td>
-                <td>${ex.rest ?? '—'}</td>
-                ${isCoach ? `<td style="display:flex;gap:6px">
-                  <button class="btn btn-sm" style="padding:3px 8px;background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3)" onclick="editExerciseRow(${ex.id})">Modifier</button>
-                  <button class="btn btn-sm btn-danger" style="padding:3px 8px" onclick="deleteExercise(${ex.id})">Supprimer</button>
-                </td>` : ''}
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>`;
+  const exercisesHtml = renderExercisesTable(s.exercises, isCoach);
 
   const addExerciseFormHtml = isCoach ? `
-    <div style="margin-top:20px;padding:16px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px">
-      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:12px">➕ Ajouter un exercice</div>
-      <div class="form-grid" style="margin-bottom:12px">
-        <div class="form-group full-width">
-          <label>Nom de l'exercice</label>
-          <input type="text" id="ex_name" placeholder="${isCardio ? 'Ex: Course à pied, Vélo, Rameur…' : isBoxe ? 'Ex: Shadow boxing, Paos, Sac…' : 'Ex: Développé couché, Squat, Tirage…'}">
-        </div>
-        <div class="form-group">
-          <label>${colSets}</label>
-          <input type="text" id="ex_sets" placeholder="${isBoxe ? '3' : '4'}">
-        </div>
-        <div class="form-group">
-          <label>${colReps}</label>
-          <input type="text" id="ex_reps" placeholder="${isCardio ? '20 min' : isBoxe ? '3 min' : '8-10'}">
-        </div>
-        <div class="form-group">
-          <label>${colDuration}</label>
-          <input type="text" id="ex_duration" placeholder="${isCardio ? 'Zone 2' : isBoxe ? '' : '3s excentrique'}">
-        </div>
-        <div class="form-group">
-          <label>Récupération</label>
-          <input type="text" id="ex_rest" placeholder="${isBoxe ? '1 min' : '90 sec'}">
-        </div>
-        <div class="form-group full-width">
-          <label>Notes</label>
-          <input type="text" id="ex_notes" placeholder="Consignes, technique, charge…">
-        </div>
-      </div>
-      <div style="display:flex;justify-content:flex-end">
-        <button class="btn btn-primary" style="width:auto" onclick="addExercise()">➕ Ajouter</button>
-      </div>
-    </div>
     <div style="display:flex;justify-content:flex-end;margin-top:16px;gap:10px">
-      <button class="btn btn-sm btn-secondary" onclick="closeTrainingDetail();openTrainingModal(${s.id})">Modifier la fiche</button>
+      <button class="btn btn-sm btn-secondary" onclick="closeTrainingDetail();openTrainingModal(${s.id})">Modifier la fiche / exercices</button>
     </div>` : `
     <div style="display:flex;justify-content:flex-end;margin-top:20px">
       <button class="btn btn-primary" style="width:auto" onclick="openPerformanceForm()">Enregistrer ma séance</button>
@@ -509,26 +521,76 @@ async function loadPerformanceHistory() {
   `;
 }
 
-async function addExercise() {
-  const name = document.getElementById('ex_name').value.trim();
-  if (!name) { showToast('Nom requis', 'error'); return; }
+function renderExercisesTable(exercises, isCoach) {
+  if (!exercises.length) return `<div class="empty-state" style="padding:30px"><p>Aucun exercice.</p></div>`;
 
-  const body = {
-    name,
-    sets:     document.getElementById('ex_sets').value.trim() || null,
-    reps:     document.getElementById('ex_reps').value.trim() || null,
-    duration: document.getElementById('ex_duration').value.trim() || null,
-    rest:     document.getElementById('ex_rest').value.trim() || null,
-    notes:    document.getElementById('ex_notes').value.trim() || null,
-  };
+  const hasTargets = exercises.some(e => e.target_set1 || e.target_set2 || e.target_set3);
+  const colSpan = isCoach ? (hasTargets ? 8 : 6) : (hasTargets ? 7 : 5);
 
-  const res = await apiFetch(`/api/training/${_currentSheet.id}/exercises`, { method: 'POST', body: JSON.stringify(body) });
-  if (!res || !res.ok) { showToast('Erreur', 'error'); return; }
+  // Group by block_name
+  const blocks = [];
+  const seenBlocks = new Set();
+  exercises.forEach(e => {
+    const bn = e.block_name || '';
+    if (!seenBlocks.has(bn)) { seenBlocks.add(bn); blocks.push(bn); }
+  });
 
-  showToast('Exercice ajouté !', 'success');
-  const sheetRes = await apiFetch(`/api/training/${_currentSheet.id}`);
-  _currentSheet = await sheetRes.json();
-  renderTrainingDetail();
+  let html = '';
+  blocks.forEach((blockName, bi) => {
+    const blockExs = exercises.filter(e => (e.block_name || '') === blockName);
+    const color = BLOCK_COLORS[bi % BLOCK_COLORS.length];
+
+    if (blockName) {
+      html += `<div style="margin-bottom:16px;border:1px solid ${color}44;border-radius:10px;overflow:hidden">
+        <div style="padding:8px 14px;background:${color}18;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:${color}">${blockName}</div>`;
+    } else {
+      html += `<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden">`;
+    }
+
+    html += `<div class="table-wrapper"><table style="font-size:13px"><thead><tr>
+      <th style="width:28px">#</th>
+      <th>Exercice</th>
+      <th style="width:60px">Séries</th>
+      <th style="width:70px">Rép.</th>
+      ${hasTargets ? `<th style="width:90px">Série 1</th><th style="width:90px">Série 2</th><th style="width:90px">Série 3</th>` : ''}
+      <th style="width:80px">Récup.</th>
+      ${isCoach ? '<th style="width:100px"></th>' : ''}
+    </tr></thead><tbody>`;
+
+    let rowIdx = 0;
+    blockExs.forEach(ex => {
+      if (ex.is_rest) {
+        html += `<tr id="ex-row-${ex.id}" style="background:rgba(201,160,32,0.05)">
+          <td colspan="${colSpan}" style="padding:7px 14px;font-style:italic;color:var(--primary);font-size:12px;border-bottom:1px dashed rgba(201,160,32,0.2)">
+            ${ex.rest_label || 'Récupération'}
+            ${isCoach ? `<span style="float:right"><button class="btn btn-sm btn-danger" style="padding:1px 6px;font-size:11px" onclick="deleteExercise(${ex.id})">✕</button></span>` : ''}
+          </td>
+        </tr>`;
+      } else {
+        rowIdx++;
+        html += `<tr id="ex-row-${ex.id}">
+          <td style="color:var(--text-muted)">${rowIdx}</td>
+          <td style="font-weight:600">${ex.name || '—'}${ex.notes ? `<div style="font-size:11px;color:var(--text-muted);font-weight:400">${ex.notes}</div>` : ''}</td>
+          <td style="text-align:center">${ex.sets ?? '—'}</td>
+          <td style="text-align:center">${ex.reps ?? '—'}</td>
+          ${hasTargets ? `
+            <td style="text-align:center;font-size:12px;color:var(--primary)">${ex.target_set1 || '—'}</td>
+            <td style="text-align:center;font-size:12px;color:var(--primary)">${ex.target_set2 || '—'}</td>
+            <td style="text-align:center;font-size:12px;color:var(--primary)">${ex.target_set3 || '—'}</td>
+          ` : ''}
+          <td style="text-align:center">${ex.rest ?? '—'}</td>
+          ${isCoach ? `<td style="white-space:nowrap">
+            <button class="btn btn-sm" style="padding:2px 7px;background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.3)" onclick="editExerciseRow(${ex.id})">Modifier</button>
+            <button class="btn btn-sm btn-danger" style="padding:2px 7px;margin-left:4px" onclick="deleteExercise(${ex.id})">Supprimer</button>
+          </td>` : ''}
+        </tr>`;
+      }
+    });
+
+    html += '</tbody></table></div></div>';
+  });
+
+  return html;
 }
 
 async function deleteExercise(exId) {
@@ -545,32 +607,41 @@ async function deleteExercise(exId) {
 function editExerciseRow(exId) {
   const ex = _currentSheet.exercises.find(e => e.id === exId);
   if (!ex) return;
-  const isCardio = ['cardio', 'condition'].includes(_currentSheet.type);
-  const isBoxe   = ['boxe', 'sparring'].includes(_currentSheet.type);
+  const hasTargets = _currentSheet.exercises.some(e => e.target_set1 || e.target_set2 || e.target_set3);
+
+  const inp = (id, val, w) =>
+    `<input type="text" value="${val||''}" id="${id}" style="width:${w||'100%'};padding:5px 6px;background:var(--input-bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px">`;
 
   const row = document.getElementById(`ex-row-${exId}`);
   row.innerHTML = `
     <td style="color:var(--text-muted);font-size:13px">${_currentSheet.exercises.indexOf(ex)+1}</td>
-    <td><input type="text" value="${ex.name}" id="eed_name_${exId}" style="width:100%;padding:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text)"></td>
-    <td><input type="text" value="${ex.sets||''}" id="eed_sets_${exId}" style="width:60px;padding:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text)"></td>
-    <td><input type="text" value="${ex.reps||''}" id="eed_reps_${exId}" style="width:70px;padding:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text)"></td>
-    <td><input type="text" value="${ex.duration||''}" id="eed_dur_${exId}" style="width:80px;padding:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text)"></td>
-    <td><input type="text" value="${ex.rest||''}" id="eed_rest_${exId}" style="width:70px;padding:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text)"></td>
-    <td style="display:flex;gap:6px">
+    <td>${inp(`eed_name_${exId}`, ex.name)}</td>
+    <td>${inp(`eed_sets_${exId}`, ex.sets, '56px')}</td>
+    <td>${inp(`eed_reps_${exId}`, ex.reps, '64px')}</td>
+    ${hasTargets ? `
+      <td>${inp(`eed_ts1_${exId}`, ex.target_set1, '80px')}</td>
+      <td>${inp(`eed_ts2_${exId}`, ex.target_set2, '80px')}</td>
+      <td>${inp(`eed_ts3_${exId}`, ex.target_set3, '80px')}</td>
+    ` : ''}
+    <td>${inp(`eed_rest_${exId}`, ex.rest, '64px')}</td>
+    <td style="white-space:nowrap">
       <button class="btn btn-sm" style="padding:3px 8px;background:rgba(46,204,113,0.15);color:#2ecc71;border:1px solid rgba(46,204,113,0.4)" onclick="saveExerciseRow(${exId})">✓</button>
-      <button class="btn btn-sm btn-secondary" style="padding:3px 8px" onclick="renderTrainingDetail()">✕</button>
+      <button class="btn btn-sm btn-secondary" style="padding:3px 8px;margin-left:4px" onclick="renderTrainingDetail()">✕</button>
     </td>
   `;
 }
 
+function _v(id) { const el = document.getElementById(id); return el ? el.value.trim() || null : null; }
+
 async function saveExerciseRow(exId) {
   const body = {
-    name:     document.getElementById(`eed_name_${exId}`).value.trim(),
-    sets:     document.getElementById(`eed_sets_${exId}`).value.trim() || null,
-    reps:     document.getElementById(`eed_reps_${exId}`).value.trim() || null,
-    duration: document.getElementById(`eed_dur_${exId}`).value.trim() || null,
-    rest:     document.getElementById(`eed_rest_${exId}`).value.trim() || null,
-    notes:    null,
+    name:        _v(`eed_name_${exId}`),
+    sets:        _v(`eed_sets_${exId}`),
+    reps:        _v(`eed_reps_${exId}`),
+    rest:        _v(`eed_rest_${exId}`),
+    target_set1: _v(`eed_ts1_${exId}`),
+    target_set2: _v(`eed_ts2_${exId}`),
+    target_set3: _v(`eed_ts3_${exId}`),
   };
   if (!body.name) { showToast('Nom requis', 'error'); return; }
 
