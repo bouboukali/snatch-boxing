@@ -626,6 +626,12 @@
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
   }
+  (function checkSession() {
+    const token = localStorage.getItem('bm_token');
+    const role = localStorage.getItem('bm_role');
+    const email = localStorage.getItem('bm_email');
+    if (token && role && email) initApp(role, email);
+  })();
 </script>
 </body>
 </html>

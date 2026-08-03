@@ -280,9 +280,3 @@ document.getElementById('trainingDetailModal').addEventListener('click', functio
 });
 
 // ===== AUTO LOGIN =====
-(function checkSession() {
-  const token = getToken();
-  const role = localStorage.getItem('bm_role');
-  const email = localStorage.getItem('bm_email');
-  if (token && role && email) initApp(role, email);
-})();
