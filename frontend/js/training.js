@@ -391,12 +391,10 @@ function renderTrainingDetail() {
   const addExerciseFormHtml = isCoach ? `
     <div style="display:flex;justify-content:flex-end;margin-top:16px;gap:10px">
       <button class="btn btn-sm btn-secondary" onclick="closeTrainingDetail();openTrainingModal(${s.id})">Modifier la fiche / exercices</button>
-    </div>` : `
-    <div style="display:flex;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-primary" style="width:auto" onclick="openPerformanceForm()">Enregistrer ma séance</button>
+      <button class="btn btn-sm" style="background:rgba(201,160,32,0.12);color:var(--primary);border:1px solid rgba(201,160,32,0.3)" onclick="loadCoachPerformances()">Voir les performances</button>
     </div>
-    <div id="performanceFormContainer"></div>
-    <div id="performanceHistoryContainer"></div>`;
+    <div id="coachPerfContainer"></div>` : `
+    <div id="boxerPerfSection" style="margin-top:24px"></div>`;
 
   document.getElementById('trainingDetailBody').innerHTML = `
     ${s.description ? `<p style="color:var(--text-muted);font-size:14px;margin-bottom:16px;line-height:1.6">${s.description}</p>` : ''}
@@ -408,42 +406,91 @@ function renderTrainingDetail() {
     ${addExerciseFormHtml}
   `;
 
-  if (!isCoach) loadPerformanceHistory();
+  if (!isCoach) renderBoxerPerfSection();
 }
 
-async function openPerformanceForm() {
+// ===== BOXER PERFORMANCE =====
+
+let _perfHistory = [];
+
+async function renderBoxerPerfSection() {
   const s = _currentSheet;
   const today = new Date().toISOString().split('T')[0];
-  const container = document.getElementById('performanceFormContainer');
 
-  const exerciseRows = s.exercises.length ? s.exercises.map(ex => `
-    <div style="padding:10px 0;border-bottom:1px solid var(--border)">
-      <div style="font-weight:600;margin-bottom:6px">${ex.name}</div>
-      <div class="form-grid" style="gap:8px">
-        <div class="form-group">
-          <label style="font-size:12px">Réalisé (séries/reps/durée…)</label>
-          <input type="text" id="perf_achieved_${ex.id}" placeholder="Ex: 4x10, 20 min, 3 rounds…">
-        </div>
-        <div class="form-group">
-          <label style="font-size:12px">Notes</label>
-          <input type="text" id="perf_notes_${ex.id}" placeholder="Ressenti, charge, difficulté…">
-        </div>
-      </div>
+  const res = await apiFetch(`/api/training/${s.id}/performance`);
+  _perfHistory = res && res.ok ? await res.json() : [];
+
+  const container = document.getElementById('boxerPerfSection');
+  if (!container) return;
+
+  const dates = [...new Set(_perfHistory.map(r => r.session_date))].sort((a,b) => b.localeCompare(a));
+
+  const hasTargets = s.exercises.some(e => e.target_set1 || e.target_set2 || e.target_set3);
+  const realExs = s.exercises.filter(e => !e.is_rest);
+
+  const sessionTabs = dates.length ? `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      ${dates.map(d => `
+        <button class="btn btn-sm" style="padding:4px 12px;font-size:12px;background:var(--input-bg);border:1px solid var(--border)" onclick="showPerfDate('${d}')">${new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</button>
+      `).join('')}
     </div>
-  `).join('') : `<div class="form-group"><label>Notes globales</label><textarea id="perf_global_notes" rows="3" placeholder="Décrivez votre séance…"></textarea></div>`;
+    <div id="perfDateView"></div>
+  ` : '';
+
+  const exerciseInputRows = realExs.map(ex => {
+    const s1 = ex.target_set1 || '—';
+    const s2 = ex.target_set2 || '—';
+    const s3 = ex.target_set3 || '—';
+    return `<tr>
+      <td style="font-weight:600">${ex.name}${ex.block_name ? `<div style="font-size:11px;color:var(--text-muted)">${ex.block_name}</div>` : ''}</td>
+      <td style="text-align:center">${ex.sets||'—'}</td>
+      <td style="text-align:center">${ex.reps||'—'}</td>
+      ${hasTargets ? `
+        <td style="text-align:center;color:var(--primary);font-size:12px">${s1}</td>
+        <td style="text-align:center;color:var(--primary);font-size:12px">${s2}</td>
+        <td style="text-align:center;color:var(--primary);font-size:12px">${s3}</td>
+      ` : ''}
+      <td><input type="text" id="pr_s1_${ex.id}" placeholder="${s1 !== '—' ? s1 : 'ex: 6x70kg'}"
+        style="width:100%;padding:4px 6px;background:var(--input-bg);border:1px solid rgba(46,204,113,0.3);border-radius:4px;color:#2ecc71;font-size:12px;text-align:center"></td>
+      <td><input type="text" id="pr_s2_${ex.id}" placeholder="${s2 !== '—' ? s2 : ''}"
+        style="width:100%;padding:4px 6px;background:var(--input-bg);border:1px solid rgba(46,204,113,0.3);border-radius:4px;color:#2ecc71;font-size:12px;text-align:center"></td>
+      <td><input type="text" id="pr_s3_${ex.id}" placeholder="${s3 !== '—' ? s3 : ''}"
+        style="width:100%;padding:4px 6px;background:var(--input-bg);border:1px solid rgba(46,204,113,0.3);border-radius:4px;color:#2ecc71;font-size:12px;text-align:center"></td>
+      <td><input type="text" id="pr_notes_${ex.id}" placeholder="Ressenti…"
+        style="width:100%;padding:4px 6px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);font-size:12px"></td>
+    </tr>`;
+  }).join('');
 
   container.innerHTML = `
-    <div style="margin-top:20px;padding:20px;background:var(--input-bg);border:2px solid rgba(201,160,32,0.3);border-radius:12px">
-      <div style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--primary);margin-bottom:16px">Ma séance</div>
-      <div class="form-group" style="margin-bottom:16px">
-        <label>Date de la séance</label>
-        <input type="date" id="perf_date" value="${today}">
+    <div style="margin-top:24px">
+      <div class="section-title" style="margin-bottom:12px">Enregistrer ma séance</div>
+      <div style="padding:16px;background:var(--input-bg);border:1px solid rgba(46,204,113,0.2);border-radius:10px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+          <label style="font-size:13px;font-weight:600">Date</label>
+          <input type="date" id="perf_date" value="${today}" style="padding:6px 10px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        </div>
+        ${realExs.length ? `
+        <div class="table-wrapper"><table style="font-size:13px">
+          <thead><tr>
+            <th>Exercice</th>
+            <th style="width:50px">Séries</th>
+            <th style="width:50px">Rép.</th>
+            ${hasTargets ? `<th style="width:80px;color:var(--primary)">Obj. S1</th><th style="width:80px;color:var(--primary)">Obj. S2</th><th style="width:80px;color:var(--primary)">Obj. S3</th>` : ''}
+            <th style="width:90px;color:#2ecc71">Réalisé S1</th>
+            <th style="width:90px;color:#2ecc71">Réalisé S2</th>
+            <th style="width:90px;color:#2ecc71">Réalisé S3</th>
+            <th style="width:100px">Notes</th>
+          </tr></thead>
+          <tbody>${exerciseInputRows}</tbody>
+        </table></div>` : '<p style="color:var(--text-muted);font-size:13px">Aucun exercice dans cette fiche.</p>'}
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button class="btn btn-primary" style="width:auto" onclick="savePerformance()">Enregistrer la séance</button>
+        </div>
       </div>
-      ${exerciseRows}
-      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
-        <button class="btn btn-secondary" style="width:auto" onclick="document.getElementById('performanceFormContainer').innerHTML=''">Annuler</button>
-        <button class="btn btn-primary" style="width:auto" onclick="savePerformance()">Enregistrer</button>
-      </div>
+
+      ${dates.length ? `
+      <div class="section-title" style="margin-bottom:12px">Mes séances précédentes</div>
+      ${sessionTabs}` : ''}
     </div>
   `;
 }
@@ -453,72 +500,131 @@ async function savePerformance() {
   const session_date = document.getElementById('perf_date').value;
   if (!session_date) { showToast('Date requise', 'error'); return; }
 
-  let exercises = [];
-  if (s.exercises.length) {
-    exercises = s.exercises.map(ex => ({
-      exercise_id: ex.id,
-      achieved: (document.getElementById(`perf_achieved_${ex.id}`) || {}).value || null,
-      notes: (document.getElementById(`perf_notes_${ex.id}`) || {}).value || null,
-    }));
-  }
+  const realExs = s.exercises.filter(e => !e.is_rest);
+  const exercises = realExs.map(ex => ({
+    exercise_id: ex.id,
+    achieved_set1: document.getElementById(`pr_s1_${ex.id}`)?.value.trim() || null,
+    achieved_set2: document.getElementById(`pr_s2_${ex.id}`)?.value.trim() || null,
+    achieved_set3: document.getElementById(`pr_s3_${ex.id}`)?.value.trim() || null,
+    notes:         document.getElementById(`pr_notes_${ex.id}`)?.value.trim() || null,
+  }));
 
-  const body = { session_date, exercises };
-  if (!s.exercises.length) {
-    body.notes = (document.getElementById('perf_global_notes') || {}).value || null;
-  }
-
-  const res = await apiFetch(`/api/training/${s.id}/performance`, { method: 'POST', body: JSON.stringify(body) });
-  if (res.ok) {
+  const res = await apiFetch(`/api/training/${s.id}/performance`, { method: 'POST', body: JSON.stringify({ session_date, exercises }) });
+  if (res && res.ok) {
     showToast('Séance enregistrée !', 'success');
-    document.getElementById('performanceFormContainer').innerHTML = '';
-    loadPerformanceHistory();
+    renderBoxerPerfSection();
   } else {
-    const d = await res.json();
-    showToast(d.error || 'Erreur', 'error');
+    showToast('Erreur lors de l\'enregistrement', 'error');
   }
 }
 
-async function loadPerformanceHistory() {
+function showPerfDate(date) {
+  const s = _currentSheet;
+  const hasTargets = s.exercises.some(e => e.target_set1 || e.target_set2 || e.target_set3);
+  const rows = _perfHistory.filter(r => r.session_date === date);
+  const realExs = s.exercises.filter(e => !e.is_rest);
+
+  const rowsHtml = realExs.map(ex => {
+    const perf = rows.find(r => r.exercise_id === ex.id);
+    const s1 = perf?.achieved_set1 || '—';
+    const s2 = perf?.achieved_set2 || '—';
+    const s3 = perf?.achieved_set3 || '—';
+
+    const cell = (obj, real) => {
+      if (real === '—') return `<td style="text-align:center;color:var(--text-muted)">—</td>`;
+      const ok = obj && obj !== '—';
+      return `<td style="text-align:center;color:#2ecc71;font-size:12px;font-weight:600">${real}${ok ? `<div style="font-size:10px;color:var(--text-muted)">obj: ${obj}</div>` : ''}</td>`;
+    };
+
+    return `<tr>
+      <td style="font-weight:600">${ex.name}</td>
+      <td style="text-align:center">${ex.sets||'—'}</td>
+      <td style="text-align:center">${ex.reps||'—'}</td>
+      ${cell(ex.target_set1, s1)}
+      ${cell(ex.target_set2, s2)}
+      ${cell(ex.target_set3, s3)}
+      <td style="font-size:12px;color:var(--text-muted)">${perf?.notes||''}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('perfDateView').innerHTML = `
+    <div style="padding:14px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;margin-bottom:16px">
+      <div style="font-weight:700;font-size:13px;color:var(--primary);margin-bottom:10px">
+        ${new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+      </div>
+      <div class="table-wrapper"><table style="font-size:13px">
+        <thead><tr>
+          <th>Exercice</th><th style="width:50px">Séries</th><th style="width:50px">Rép.</th>
+          <th style="width:90px">Série 1</th><th style="width:90px">Série 2</th><th style="width:90px">Série 3</th>
+          <th>Notes</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table></div>
+    </div>
+  `;
+}
+
+// ===== COACH VIEW PERFORMANCES =====
+
+async function loadCoachPerformances() {
   const s = _currentSheet;
   const res = await apiFetch(`/api/training/${s.id}/performance`);
-  if (!res.ok) return;
+  if (!res || !res.ok) return;
   const rows = await res.json();
-  const container = document.getElementById('performanceHistoryContainer');
-  if (!container) return;
+  const container = document.getElementById('coachPerfContainer');
 
   if (!rows.length) {
-    container.innerHTML = `<div style="margin-top:24px;color:var(--text-muted);font-size:14px;text-align:center;padding:20px">Aucune séance enregistrée.</div>`;
+    container.innerHTML = `<div style="margin-top:20px;color:var(--text-muted);font-size:14px;text-align:center;padding:20px">Aucune performance enregistrée.</div>`;
     return;
   }
 
-  const byDate = {};
+  // Group by boxer then date
+  const byBoxer = {};
   rows.forEach(r => {
-    if (!byDate[r.session_date]) byDate[r.session_date] = [];
-    byDate[r.session_date].push(r);
+    const key = r.boxer_id;
+    if (!byBoxer[key]) byBoxer[key] = { name: `${r.first_name||''} ${r.last_name||r.email}`.trim(), email: r.email, sessions: {} };
+    if (!byBoxer[key].sessions[r.session_date]) byBoxer[key].sessions[r.session_date] = [];
+    byBoxer[key].sessions[r.session_date].push(r);
   });
 
-  const sessionsHtml = Object.entries(byDate).map(([date, entries]) => {
-    const entriesHtml = entries.map(e => `
-      <div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
-        ${e.exercise_name ? `<span style="font-weight:600;color:var(--text)">${e.exercise_name}</span> — ` : ''}
-        ${e.achieved ? `<span style="color:var(--primary)">${e.achieved}</span>` : ''}
-        ${e.notes ? `<span style="color:var(--text-muted)"> · ${e.notes}</span>` : ''}
-      </div>
-    `).join('');
+  const realExs = s.exercises.filter(e => !e.is_rest);
+
+  const boxersHtml = Object.values(byBoxer).map(boxer => {
+    const sessionsHtml = Object.entries(boxer.sessions).sort((a,b) => b[0].localeCompare(a[0])).map(([date, perfs]) => {
+      const rowsHtml = realExs.map(ex => {
+        const p = perfs.find(r => r.exercise_id === ex.id);
+        return `<tr>
+          <td>${ex.name}</td>
+          <td style="text-align:center;color:#2ecc71;font-size:12px">${p?.achieved_set1||'—'}</td>
+          <td style="text-align:center;color:#2ecc71;font-size:12px">${p?.achieved_set2||'—'}</td>
+          <td style="text-align:center;color:#2ecc71;font-size:12px">${p?.achieved_set3||'—'}</td>
+          <td style="font-size:12px;color:var(--text-muted)">${p?.notes||''}</td>
+        </tr>`;
+      }).join('');
+      return `
+        <div style="margin-bottom:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:6px">
+            ${new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
+          </div>
+          <div class="table-wrapper"><table style="font-size:13px">
+            <thead><tr><th>Exercice</th><th style="width:80px">Série 1</th><th style="width:80px">Série 2</th><th style="width:80px">Série 3</th><th>Notes</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table></div>
+        </div>`;
+    }).join('');
+
     return `
-      <div style="margin-bottom:12px;padding:14px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px">
-        <div style="font-weight:700;font-size:13px;color:var(--primary);margin-bottom:8px">${new Date(date).toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
-        ${entriesHtml}
-      </div>
-    `;
+      <div style="margin-bottom:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="padding:10px 14px;background:var(--input-bg);font-weight:700;font-size:13px">${boxer.name} <span style="font-weight:400;color:var(--text-muted);font-size:12px">${boxer.email}</span></div>
+        <div style="padding:14px">${sessionsHtml}</div>
+      </div>`;
   }).join('');
 
   container.innerHTML = `
-    <div style="margin-top:28px">
-      <div class="section-title" style="margin-bottom:12px">Historique de mes séances</div>
-      ${sessionsHtml}
-    </div>
-  `;
+    <div style="margin-top:20px">
+      <div class="section-title" style="margin-bottom:12px">Performances des boxeurs</div>
+      ${boxersHtml}
+    </div>`;
 }
 
 function renderExercisesTable(exercises, isCoach) {

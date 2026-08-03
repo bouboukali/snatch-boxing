@@ -144,6 +144,9 @@ async function initDb() {
   await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS is_rest INTEGER DEFAULT 0');
   await pool.query('ALTER TABLE training_exercises ADD COLUMN IF NOT EXISTS rest_label TEXT');
   await pool.query("ALTER TABLE training_exercises ALTER COLUMN name DROP NOT NULL");
+  await pool.query('ALTER TABLE training_performances ADD COLUMN IF NOT EXISTS achieved_set1 TEXT');
+  await pool.query('ALTER TABLE training_performances ADD COLUMN IF NOT EXISTS achieved_set2 TEXT');
+  await pool.query('ALTER TABLE training_performances ADD COLUMN IF NOT EXISTS achieved_set3 TEXT');
 
   // Seed default coach
   const [coachExists] = await query("SELECT id FROM users WHERE role='coach' LIMIT 1");

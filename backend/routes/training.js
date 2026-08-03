@@ -206,15 +206,15 @@ router.post('/:id/performance', requireAuth, async (req, res) => {
   if (exercises && exercises.length) {
     for (const e of exercises) {
       await db.query(
-        'INSERT INTO training_performances (sheet_id, boxer_id, session_date, exercise_id, achieved, notes) VALUES ($1, $2, $3, $4, $5, $6)',
-        [req.params.id, req.user.id, session_date, e.exercise_id || null, e.achieved || null, e.notes || null]
+        `INSERT INTO training_performances
+          (sheet_id, boxer_id, session_date, exercise_id, achieved, notes,
+           achieved_set1, achieved_set2, achieved_set3)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [req.params.id, req.user.id, session_date, e.exercise_id || null,
+         e.achieved || null, e.notes || null,
+         e.achieved_set1 || null, e.achieved_set2 || null, e.achieved_set3 || null]
       );
     }
-  } else {
-    await db.query(
-      'INSERT INTO training_performances (sheet_id, boxer_id, session_date, exercise_id, achieved, notes) VALUES ($1, $2, $3, $4, $5, $6)',
-      [req.params.id, req.user.id, session_date, null, null, req.body.notes || null]
-    );
   }
 
   res.status(201).json({ success: true });
