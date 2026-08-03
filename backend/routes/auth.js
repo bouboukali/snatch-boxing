@@ -22,7 +22,22 @@ router.post('/login', async (req, res) => {
     [profile] = await db.query('SELECT * FROM boxer_profiles WHERE user_id = $1', [user.id]);
   }
 
-  res.json({ token, role: user.role, email: user.email, profile });
+  res.json({ token, role: user.role, email: user.email, profile, must_change_password: !!user.must_change_password });
+});
+
+router.post('/change-password', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Non autorisé' });
+  const token = authHeader.split(' ')[1];
+  let decoded;
+  try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Token invalide' }); }
+
+  const { new_password } = req.body;
+  if (!new_password || new_password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (min 6 caractères)' });
+
+  const hash = bcrypt.hashSync(new_password, 10);
+  await db.query('UPDATE users SET password = $1, must_change_password = 0 WHERE id = $2', [hash, decoded.id]);
+  res.json({ success: true });
 });
 
 router.post('/register-boxer', async (req, res) => {

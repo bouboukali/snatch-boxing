@@ -452,13 +452,10 @@ function openCreateBoxerModal() {
 
     <div class="section-title">Identifiants de connexion</div>
     <div class="form-grid" style="margin-bottom:20px">
-      <div class="form-group">
+      <div class="form-group full-width">
         <label>Email *</label>
         <input type="email" id="nb_email" placeholder="boxeur@email.fr">
-      </div>
-      <div class="form-group">
-        <label>Mot de passe temporaire *</label>
-        <input type="text" id="nb_password" placeholder="min. 6 caractères" value="boxing123">
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Un email d'invitation sera envoyé automatiquement.</div>
       </div>
     </div>
 
@@ -541,14 +538,11 @@ function openCreateBoxerModal() {
 }
 
 async function saveNewBoxer() {
-  const email    = document.getElementById('nb_email').value.trim();
-  const password = document.getElementById('nb_password').value.trim();
-
-  if (!email)              { showFormError('createBoxerError', 'L\'email est requis.'); return; }
-  if (password.length < 6) { showFormError('createBoxerError', 'Le mot de passe doit faire au moins 6 caractères.'); return; }
+  const email = document.getElementById('nb_email').value.trim();
+  if (!email) { showFormError('createBoxerError', 'L\'email est requis.'); return; }
 
   const body = {
-    email, password,
+    email,
     first_name:       document.getElementById('nb_first').value.trim() || null,
     last_name:        document.getElementById('nb_last').value.trim() || null,
     phone:            document.getElementById('nb_phone').value.trim() || null,

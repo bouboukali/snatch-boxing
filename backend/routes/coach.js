@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../db');
 const { requireCoach } = require('../middleware/auth');
+const { sendInvitation } = require('../mailer');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -31,16 +32,16 @@ const upload = multer({
 const router = express.Router();
 
 router.post('/boxers', requireCoach, async (req, res) => {
-  const { email, password, first_name, last_name, phone, date_of_birth, license_number, physical_address, wins, losses, draws, weight, weight_category, gender, competition_category } = req.body;
+  const { email, first_name, last_name, phone, date_of_birth, license_number, physical_address, wins, losses, draws, weight, weight_category, gender, competition_category } = req.body;
   if (!email) return res.status(400).json({ error: 'Email requis' });
-  if (!password || password.length < 6) return res.status(400).json({ error: 'Mot de passe requis (min 6 caractères)' });
 
   const [existing] = await db.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
   if (existing) return res.status(409).json({ error: 'Cet email est déjà utilisé' });
 
-  const hash = bcrypt.hashSync(password, 10);
+  const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+  const hash = bcrypt.hashSync(tempPassword, 10);
   const [newUser] = await db.query(
-    "INSERT INTO users (email, password, role) VALUES ($1, $2, 'boxer') RETURNING id",
+    "INSERT INTO users (email, password, role, must_change_password) VALUES ($1, $2, 'boxer', 1) RETURNING id",
     [email.toLowerCase().trim(), hash]
   );
 
@@ -51,6 +52,12 @@ router.post('/boxers', requireCoach, async (req, res) => {
       license_number || null, physical_address || null,
       wins || 0, losses || 0, draws || 0, weight || null, weight_category || null,
       gender || null, competition_category || null]);
+
+  try {
+    await sendInvitation(email.toLowerCase().trim(), first_name, tempPassword);
+  } catch (e) {
+    console.error('Erreur envoi email invitation:', e.message);
+  }
 
   res.status(201).json({ id: newUser.id, email: email.toLowerCase().trim() });
 });

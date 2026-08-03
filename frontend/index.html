@@ -609,7 +609,12 @@
     const token = localStorage.getItem('bm_token');
     const role = localStorage.getItem('bm_role');
     const email = localStorage.getItem('bm_email');
-    if (token && role && email) initApp(role, email);
+    if (!token || !role || !email) return;
+    if (localStorage.getItem('bm_must_change_pwd') === '1') {
+      showChangePasswordScreen();
+      return;
+    }
+    initApp(role, email);
   })();
 </script>
 </body>

@@ -58,7 +58,57 @@ async function doLogin() {
   setToken(data.token);
   localStorage.setItem('bm_role', data.role);
   localStorage.setItem('bm_email', data.email);
+  localStorage.setItem('bm_must_change_pwd', data.must_change_password ? '1' : '0');
+
+  if (data.must_change_password) {
+    showChangePasswordScreen();
+    return;
+  }
+
   initApp(data.role, data.email);
+}
+
+function showChangePasswordScreen() {
+  document.getElementById('authPage').innerHTML = `
+    <div class="auth-box">
+      <div class="auth-logo">
+        <img src="/logo.png" class="site-logo-img" alt="Snatch Boxing Academy">
+      </div>
+      <h3 style="text-align:center;margin-bottom:6px;font-size:18px">Première connexion</h3>
+      <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:20px">Choisissez un nouveau mot de passe pour sécuriser votre compte.</p>
+      <div id="changePwdError" class="error-msg"></div>
+      <div class="form-group">
+        <label>Nouveau mot de passe</label>
+        <input type="password" id="newPwd1" placeholder="Min. 6 caractères">
+      </div>
+      <div class="form-group">
+        <label>Confirmer le mot de passe</label>
+        <input type="password" id="newPwd2" placeholder="Répétez le mot de passe">
+      </div>
+      <button class="btn btn-primary" onclick="submitNewPassword()">Confirmer</button>
+    </div>
+  `;
+}
+
+async function submitNewPassword() {
+  const p1 = document.getElementById('newPwd1').value;
+  const p2 = document.getElementById('newPwd2').value;
+  const errEl = document.getElementById('changePwdError');
+
+  if (p1.length < 6) { errEl.textContent = 'Minimum 6 caractères.'; errEl.style.display = 'block'; return; }
+  if (p1 !== p2) { errEl.textContent = 'Les mots de passe ne correspondent pas.'; errEl.style.display = 'block'; return; }
+
+  const res = await apiFetch('/api/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ new_password: p1 })
+  });
+  if (!res || !res.ok) { errEl.textContent = 'Erreur lors du changement.'; errEl.style.display = 'block'; return; }
+
+  localStorage.setItem('bm_must_change_pwd', '0');
+  showToast('Mot de passe mis à jour !', 'success');
+  const role = localStorage.getItem('bm_role');
+  const email = localStorage.getItem('bm_email');
+  initApp(role, email);
 }
 
 async function doRegister() {
