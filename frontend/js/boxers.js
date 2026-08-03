@@ -20,6 +20,13 @@ function updateWeightCatSelect(selectId, gender, compCat, currentVal) {
     cats.map(c => `<option value="${c}" ${c === currentVal ? 'selected' : ''}>${c}</option>`).join('');
 }
 
+function updateProfileWeightCat() {
+  const gender = document.getElementById('pGender')?.value || '';
+  const compCat = document.getElementById('pCompCat')?.value || '';
+  const current = document.getElementById('pWeightCat')?.value || '';
+  updateWeightCatSelect('pWeightCat', gender, compCat, current);
+}
+
 let _currentModalBoxer = null;
 
 function calcCompCat(dob) {
@@ -312,8 +319,8 @@ function renderBoxerModalEdit() {
         <label>Sexe</label>
         <select id="eb_gender" onchange="onGenderChange('eb_gender','eb_compcat','eb_cat')">
           <option value="">— Sélectionner —</option>
-          <option value="Homme" ${b.gender==='Homme'?'selected':''}>♂ Homme</option>
-          <option value="Femme" ${b.gender==='Femme'?'selected':''}>♀ Femme</option>
+          <option value="Homme" ${b.gender==='Homme'?'selected':''}>Homme</option>
+          <option value="Femme" ${b.gender==='Femme'?'selected':''}>Femme</option>
         </select>
       </div>
       <div class="form-group">
@@ -512,8 +519,8 @@ function openCreateBoxerModal() {
         <label>Sexe</label>
         <select id="nb_gender" onchange="onGenderChange('nb_gender','nb_compcat','nb_cat')">
           <option value="">— Sélectionner —</option>
-          <option value="Homme">♂ Homme</option>
-          <option value="Femme">♀ Femme</option>
+          <option value="Homme">Homme</option>
+          <option value="Femme">Femme</option>
         </select>
       </div>
       <div class="form-group">

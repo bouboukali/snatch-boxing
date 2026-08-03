@@ -81,7 +81,7 @@
     <!-- Coach: Dashboard -->
     <div class="page" id="page-coach-dashboard">
       <div class="page-header">
-        <h2>Bonjour 👋</h2>
+        <h2>Bonjour</h2>
         <p>Voici ce qui se passe aujourd'hui</p>
       </div>
       <div id="dashContent"></div>
@@ -96,7 +96,7 @@
         </div>
         <div style="display:flex;gap:10px;align-self:center">
           <button class="btn btn-primary" style="width:auto" onclick="openCreateBoxerModal()">+ Ajouter un boxeur</button>
-          <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.4)" onclick="openExportModal()">📥 Exporter</button>
+          <button class="btn btn-sm" style="background:var(--gold-dim);color:var(--primary);border:1px solid rgba(201,160,32,0.4)" onclick="openExportModal()">Exporter</button>
         </div>
       </div>
       <div class="search-bar">
@@ -169,12 +169,12 @@
       <div class="month-selector" style="margin-bottom:20px">
         <select id="trainingTypeFilter" onchange="filterTrainingSheets()">
           <option value="">Tous les types</option>
-          <option value="muscu">🏋️ Musculation</option>
-          <option value="cardio">🏃 Cardio</option>
-          <option value="boxe">🥊 Boxe</option>
-          <option value="condition">💪 Condition physique</option>
-          <option value="sparring">🤜 Sparring</option>
-          <option value="recreant">🎯 Récréant</option>
+          <option value="muscu">Musculation</option>
+          <option value="cardio">Cardio</option>
+          <option value="boxe">Boxe</option>
+          <option value="condition">Condition physique</option>
+          <option value="sparring">Sparring</option>
+          <option value="recreant">Récréant</option>
         </select>
       </div>
       <div id="trainingSheetsGrid"></div>
@@ -281,45 +281,24 @@
               <label>Catégorie de poids</label>
               <select id="pWeightCat">
                 <option value="">— Sélectionner —</option>
-                <option value="Mini-mouche (−46,5 kg)">Mini-mouche (−46,5 kg)</option>
-                <option value="Mi-mouche (−48 kg)">Mi-mouche (−48 kg)</option>
-                <option value="Mouche (−50,8 kg)">Mouche (−50,8 kg)</option>
-                <option value="Super-mouche (−52 kg)">Super-mouche (−52 kg)</option>
-                <option value="Coq (−53,5 kg)">Coq (−53,5 kg)</option>
-                <option value="Super-coq (−55,3 kg)">Super-coq (−55,3 kg)</option>
-                <option value="Plume (−57 kg)">Plume (−57 kg)</option>
-                <option value="Super-plume (−58,9 kg)">Super-plume (−58,9 kg)</option>
-                <option value="Léger (−61 kg)">Léger (−61 kg)</option>
-                <option value="Super-léger (−63,5 kg)">Super-léger (−63,5 kg)</option>
-                <option value="Mi-moyen (−66 kg)">Mi-moyen (−66 kg)</option>
-                <option value="Super-mi-moyen (−69 kg)">Super-mi-moyen (−69 kg)</option>
-                <option value="Moyen (−72 kg)">Moyen (−72 kg)</option>
-                <option value="Super-moyen (−76 kg)">Super-moyen (−76 kg)</option>
-                <option value="Mi-lourd (−80 kg)">Mi-lourd (−80 kg)</option>
-                <option value="Cruiser (−90 kg)">Cruiser (−90 kg)</option>
-                <option value="Lourd (−90,7 kg)">Lourd (−90,7 kg)</option>
-                <option value="Super-lourd (+90,7 kg)">Super-lourd (+90,7 kg)</option>
               </select>
             </div>
             <div class="form-group">
               <label>Sexe</label>
-              <select id="pGender">
+              <select id="pGender" onchange="updateProfileWeightCat()">
                 <option value="">— Sélectionner —</option>
-                <option value="Homme">♂ Homme</option>
-                <option value="Femme">♀ Femme</option>
+                <option value="Homme">Homme</option>
+                <option value="Femme">Femme</option>
               </select>
             </div>
             <div class="form-group">
               <label>Catégorie de compétition</label>
-              <select id="pCompCat">
+              <select id="pCompCat" onchange="updateProfileWeightCat()">
                 <option value="">— Sélectionner —</option>
-                <option value="Elite">Elite</option>
-                <option value="Youth">Youth</option>
-                <option value="U22">U22</option>
-                <option value="U19">U19</option>
-                <option value="U17">U17</option>
                 <option value="U15">U15</option>
-                <option value="U13">U13</option>
+                <option value="U17">U17</option>
+                <option value="U19">U19</option>
+                <option value="Elite">Elite</option>
                 <option value="Masters">Masters</option>
                 <option value="Récréant">Récréant</option>
               </select>
@@ -329,7 +308,7 @@
       </div>
 
       <div style="display:flex;gap:12px;justify-content:flex-end">
-        <button class="btn btn-primary" style="width:auto" onclick="saveProfile()">💾 Enregistrer le profil</button>
+        <button class="btn btn-primary" style="width:auto" onclick="saveProfile()">Enregistrer le profil</button>
       </div>
     </div>
 
@@ -427,14 +406,14 @@
         <div class="form-group">
           <label>Catégorie</label>
           <select id="ev_type" onchange="onEvTypeChange(this.value)">
-            <option value="boxe">🥊 Boxe anglaise</option>
-            <option value="condition">💪 Condition physique</option>
-            <option value="muscu">🏋️ Musculation</option>
-            <option value="sparring">🤜 Sparring</option>
-            <option value="cardio">🏃 Cardio</option>
-            <option value="combat">🏆 Combat officiel</option>
-            <option value="recreant">🎯 Récréant</option>
-            <option value="__custom__">✏️ Autre (personnalisé)...</option>
+            <option value="boxe">Boxe anglaise</option>
+            <option value="condition">Condition physique</option>
+            <option value="muscu">Musculation</option>
+            <option value="sparring">Sparring</option>
+            <option value="cardio">Cardio</option>
+            <option value="combat">Combat officiel</option>
+            <option value="recreant">Récréant</option>
+            <option value="__custom__">Autre (personnalisé)...</option>
           </select>
           <input type="text" id="ev_custom_type" placeholder="Nom de la catégorie..." style="display:none;margin-top:8px">
         </div>
@@ -442,8 +421,8 @@
         <div class="form-group">
           <label>Visibilité</label>
           <select id="ev_private" onchange="togglePrivate(this.value)">
-            <option value="0">🌐 Public (tous les boxeurs)</option>
-            <option value="1">🔒 Privé (invités seulement)</option>
+            <option value="0">Public (tous les boxeurs)</option>
+            <option value="1">Privé (invités seulement)</option>
           </select>
         </div>
 
@@ -519,10 +498,10 @@
       </div>
 
       <div style="display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap">
-        <button class="btn btn-danger btn-sm" id="evDeleteBtn" style="display:none" onclick="deleteEventFromModal()">🗑 Supprimer</button>
+        <button class="btn btn-danger btn-sm" id="evDeleteBtn" style="display:none" onclick="deleteEventFromModal()">Supprimer</button>
         <div style="display:flex;gap:12px;margin-left:auto">
           <button class="btn btn-secondary btn-sm" onclick="closeEventModal()">Annuler</button>
-          <button class="btn btn-primary" style="width:auto" onclick="saveEvent()">💾 Enregistrer</button>
+          <button class="btn btn-primary" style="width:auto" onclick="saveEvent()">Enregistrer</button>
         </div>
       </div>
     </div>
@@ -566,7 +545,7 @@
 <div class="modal-overlay" id="exportModal">
   <div class="modal" style="max-width:520px">
     <div class="modal-header">
-      <h3>📥 Exporter les boxeurs</h3>
+      <h3>Exporter les boxeurs</h3>
       <button class="modal-close" onclick="closeExportModal()">×</button>
     </div>
     <div class="modal-body">
@@ -580,8 +559,8 @@
       <div id="exportBoxerList" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;margin-bottom:20px"></div>
       <div style="display:flex;justify-content:flex-end;gap:10px">
         <button class="btn btn-secondary btn-sm" onclick="closeExportModal()">Annuler</button>
-        <button class="btn btn-sm" style="width:auto;background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.4)" onclick="doExportPDF()">📄 Exporter en PDF</button>
-        <button class="btn btn-primary" style="width:auto" onclick="doExportCSV()">📥 Exporter en CSV</button>
+        <button class="btn btn-sm" style="width:auto;background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.4)" onclick="doExportPDF()">Exporter en PDF</button>
+        <button class="btn btn-primary" style="width:auto" onclick="doExportCSV()">Exporter en CSV</button>
       </div>
     </div>
   </div>

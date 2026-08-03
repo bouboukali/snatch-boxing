@@ -17,26 +17,14 @@ async function loadBoxerProfile() {
   document.getElementById('pPhone').value = p.phone || '';
   document.getElementById('pDob').value = p.date_of_birth || '';
 
-  const catSel = document.getElementById('pWeightCat');
-  if (p.weight_category) {
-    for (const opt of catSel.options) {
-      if (opt.value === p.weight_category) { opt.selected = true; break; }
-    }
-  }
-
   const genderSel = document.getElementById('pGender');
-  if (p.gender && genderSel) {
-    for (const opt of genderSel.options) {
-      if (opt.value === p.gender) { opt.selected = true; break; }
-    }
-  }
+  if (p.gender && genderSel) genderSel.value = p.gender;
 
   const compSel = document.getElementById('pCompCat');
-  if (p.competition_category && compSel) {
-    for (const opt of compSel.options) {
-      if (opt.value === p.competition_category) { opt.selected = true; break; }
-    }
-  }
+  if (p.competition_category && compSel) compSel.value = p.competition_category;
+
+  // Populate weight cats based on gender + comp cat, then set current value
+  updateWeightCatSelect('pWeightCat', p.gender || '', p.competition_category || '', p.weight_category || '');
 }
 
 async function saveProfile() {
