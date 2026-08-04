@@ -98,7 +98,6 @@ async function loadCoachDashboard() {
                   <div class="dash-event-title">${fullName(b) || b.email}</div>
                   <div class="dash-event-meta">En attente de paiement</div>
                 </div>
-                <span class="badge badge-unpaid">✗</span>
               </div>
             `).join('')
           }
