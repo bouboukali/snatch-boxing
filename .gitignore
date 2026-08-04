@@ -4,3 +4,10 @@ uploads/
 boxing.db
 boxing.db-shm
 boxing.db-wal
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
