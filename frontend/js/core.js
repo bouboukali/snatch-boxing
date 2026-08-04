@@ -8,7 +8,7 @@ let allBoxers = [];
 
 function getToken() { return localStorage.getItem('bm_token'); }
 function setToken(t) { localStorage.setItem('bm_token', t); }
-function clearToken() { localStorage.removeItem('bm_token'); localStorage.removeItem('bm_role'); localStorage.removeItem('bm_email'); }
+function clearToken() { localStorage.removeItem('bm_token'); localStorage.removeItem('bm_role'); localStorage.removeItem('bm_email'); localStorage.removeItem('bm_admin_token'); }
 
 function authHeaders() {
   return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() };
@@ -59,6 +59,7 @@ async function doLogin() {
   localStorage.setItem('bm_role', data.role);
   localStorage.setItem('bm_email', data.email);
   localStorage.setItem('bm_must_change_pwd', data.must_change_password ? '1' : '0');
+  if (data.role !== 'admin') localStorage.removeItem('bm_admin_token');
 
   if (data.must_change_password) {
     showChangePasswordScreen();
