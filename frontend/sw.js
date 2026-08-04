@@ -1,4 +1,4 @@
-const CACHE_NAME = 'snatch-v3';
+const CACHE_NAME = 'snatch-v4';
 const STATIC_ASSETS = [
   '/',
   '/css/style.css',
