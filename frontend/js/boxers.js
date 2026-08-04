@@ -151,7 +151,7 @@ function renderBoxerGrid(boxers) {
           ${b.weight_category ? `<span class="weight-pill">${b.weight_category.split('(')[0].trim()}</span>` : ''}
         </div>
         <div class="boxer-card-meta">
-          ${b.gender ? `<span class="meta-pill ${isFemme ? 'meta-pill-f' : 'meta-pill-m'}">${isFemme ? '♀' : '♂'} ${b.gender}</span>` : '<span class="meta-pill meta-pill-none">Genre ?</span>'}
+          ${b.gender ? `<span class="meta-pill ${isFemme ? 'meta-pill-f' : 'meta-pill-m'}">${b.gender}</span>` : '<span class="meta-pill meta-pill-none">Genre ?</span>'}
           ${compCat ? `<span class="meta-pill meta-pill-cat">${compCat}</span>` : ''}
           ${b.license_number ? `<span class="meta-pill">${b.license_number}</span>` : ''}
         </div>

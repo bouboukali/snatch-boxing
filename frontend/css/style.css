@@ -536,7 +536,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
+.card-header > *:last-child { flex-shrink: 0; }
 
 .card-header h3 {
   font-size: 15px;
@@ -544,6 +546,10 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #ddd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .card-body { padding: 20px; }

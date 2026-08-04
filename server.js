@@ -1,28 +1,7 @@
-require('dotenv').config();
-const express = require('express');
-const path = require('path');
-const cors = require('cors');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'frontend')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-app.use('/api/auth', require('./backend/routes/auth'));
-app.use('/api/boxer', require('./backend/routes/boxer'));
-app.use('/api/coach', require('./backend/routes/coach'));
-app.use('/api/events', require('./backend/routes/events'));
-app.use('/api/admin', require('./backend/routes/admin'));
-app.use('/api/training', require('./backend/routes/training'));
-
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
-});
-
+const app = require('./backend/app');
 const { initDb } = require('./backend/db');
+
+const PORT = process.env.PORT || 3000;
 
 initDb().then(() => {
   app.listen(PORT, () => {
