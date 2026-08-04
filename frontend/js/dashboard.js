@@ -73,12 +73,7 @@ async function loadCoachDashboard() {
                 <div class="dash-event-info">
                   <div class="dash-event-title">${ev.title}</div>
                   <div class="dash-event-meta">${fmtDateFull(ev.start_date)}${ev.start_time ? ' · ' + ev.start_time.slice(0,5) : ''}${ev.location ? ' · ' + ev.location : ''}</div>
-                  <div class="dash-event-tags">
-                    <span class="dash-tag" style="background:${ev.is_private ? 'rgba(150,150,150,0.15)' : 'rgba(201,160,32,0.15)'}; color:${ev.is_private ? 'var(--text-muted)' : 'var(--primary)'}">
-                      ${ev.is_private ? 'Privé' : 'Public'}
-                    </span>
-                    <span class="dash-tag" style="background:rgba(255,255,255,0.06);color:var(--text-muted)">${getEvType(ev.type).label}</span>
-                  </div>
+                  <div class="dash-event-meta" style="margin-top:2px"><span style="color:${ev.is_private ? 'var(--text-muted)' : 'var(--primary)'}">${ev.is_private ? 'Privé' : 'Public'}</span> · ${getEvType(ev.type).label}</div>
                 </div>
                 <div class="dash-event-type">${getEvType(ev.type).icon}</div>
               </div>
