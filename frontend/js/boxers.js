@@ -2,14 +2,64 @@
 
 const COMPETITION_CATS = ['U15', 'U17', 'U19', 'Elite', 'Masters', 'Récréant'];
 
-const WEIGHT_CATS_ELITE_H  = ['50 kg','55 kg','60 kg','65 kg','70 kg','75 kg','80 kg','85 kg','90 kg','+90 kg'];
-const WEIGHT_CATS_ELITE_F  = ['48 kg','51 kg','54 kg','57 kg','60 kg','65 kg','70 kg','75 kg','80 kg','+80 kg'];
-const WEIGHT_CATS_U17      = ['46 kg','48 kg','50 kg','52 kg','54 kg','57 kg','60 kg','63 kg','66 kg','70 kg','75 kg','80 kg','+80 kg'];
+const WEIGHT_CATS_ELITE_H = [
+  '46 – 50 kg (Light Flyweight)',
+  '51 – 54 kg (Flyweight)',
+  '55 – 57 kg (Bantamweight)',
+  '58 – 60 kg (Featherweight)',
+  '61 – 64 kg (Lightweight)',
+  '65 – 69 kg (Light Welterweight)',
+  '70 – 75 kg (Welterweight)',
+  '76 – 80 kg (Light Middleweight)',
+  '81 – 86 kg (Middleweight)',
+  '87 – 92 kg (Light Heavyweight)',
+  '+92 kg (Heavyweight)',
+];
+
+const WEIGHT_CATS_ELITE_F = [
+  '45 – 48 kg (Light Flyweight)',
+  '49 – 51 kg (Flyweight)',
+  '52 – 54 kg (Bantamweight)',
+  '55 – 57 kg (Featherweight)',
+  '58 – 60 kg (Lightweight)',
+  '61 – 64 kg (Light Welterweight)',
+  '65 – 69 kg (Welterweight)',
+  '70 – 75 kg (Light Middleweight)',
+  '76 – 80 kg (Middleweight)',
+  '+80 kg (Light Heavyweight)',
+];
+
+const WEIGHT_CATS_U17_H = [
+  '46 – 48 kg (Light Flyweight)',
+  '49 – 52 kg (Flyweight)',
+  '53 – 54 kg (Bantamweight)',
+  '55 – 57 kg (Featherweight)',
+  '58 – 60 kg (Lightweight)',
+  '61 – 63 kg (Light Welterweight)',
+  '64 – 66 kg (Welterweight)',
+  '67 – 70 kg (Light Middleweight)',
+  '71 – 75 kg (Middleweight)',
+  '76 – 80 kg (Light Heavyweight)',
+  '+80 kg (Heavyweight)',
+];
+
+const WEIGHT_CATS_U17_F = [
+  '44 – 46 kg (Light Flyweight)',
+  '47 – 48 kg (Flyweight)',
+  '49 – 52 kg (Bantamweight)',
+  '53 – 54 kg (Featherweight)',
+  '55 – 57 kg (Lightweight)',
+  '58 – 60 kg (Light Welterweight)',
+  '61 – 63 kg (Welterweight)',
+  '64 – 66 kg (Light Middleweight)',
+  '67 – 70 kg (Middleweight)',
+  '+70 kg (Light Heavyweight)',
+];
 
 function getWeightCats(gender, compCat) {
-  if (compCat === 'U17') return WEIGHT_CATS_U17;
-  if (gender === 'Femme') return WEIGHT_CATS_ELITE_F;
-  return WEIGHT_CATS_ELITE_H;
+  const isU17 = compCat === 'U15' || compCat === 'U17';
+  if (isU17) return gender === 'Femme' ? WEIGHT_CATS_U17_F : WEIGHT_CATS_U17_H;
+  return gender === 'Femme' ? WEIGHT_CATS_ELITE_F : WEIGHT_CATS_ELITE_H;
 }
 
 function updateWeightCatSelect(selectId, gender, compCat, currentVal) {
@@ -122,7 +172,8 @@ function populateWeightFilter() {
   const all = [...new Set([
     ...WEIGHT_CATS_ELITE_H,
     ...WEIGHT_CATS_ELITE_F,
-    ...WEIGHT_CATS_U17
+    ...WEIGHT_CATS_U17_H,
+    ...WEIGHT_CATS_U17_F,
   ])].sort((a, b) => {
     const toNum = s => s.startsWith('+') ? 9999 : parseFloat(s);
     return toNum(a) - toNum(b);
@@ -309,7 +360,7 @@ function renderBoxerModalEdit() {
         <input type="number" id="eb_weight" step="0.1" min="40" value="${b.weight||''}">
       </div>
       <div class="form-group">
-        <label>Catégorie de poids</label>
+        <label>Catégorie de poids de combat</label>
         <select id="eb_cat">
           <option value="">— Sélectionner —</option>
           ${getWeightCats(b.gender, b.competition_category).map(c => `<option value="${c}" ${b.weight_category===c?'selected':''}>${c}</option>`).join('')}
@@ -471,7 +522,7 @@ function openCreateBoxerModal() {
       </div>
       <div class="form-group">
         <label>Téléphone</label>
-        <input type="tel" id="nb_phone" placeholder="+33 6 00 00 00 00">
+        <input type="tel" id="nb_phone" placeholder="+32 4 00 00 00 00">
       </div>
       <div class="form-group">
         <label>Date de naissance</label>
@@ -479,11 +530,11 @@ function openCreateBoxerModal() {
       </div>
       <div class="form-group">
         <label>Numéro de licence</label>
-        <input type="text" id="nb_license" placeholder="FFA-2024-XXXXX">
+        <input type="text" id="nb_license" placeholder="KBBB-2024-XXXXX">
       </div>
       <div class="form-group full-width">
         <label>Adresse</label>
-        <input type="text" id="nb_address" placeholder="12 rue des Champions, 75001 Paris">
+        <input type="text" id="nb_address" placeholder="Rue des Champions 12, 1000 Bruxelles">
       </div>
     </div>
 
@@ -506,7 +557,7 @@ function openCreateBoxerModal() {
         <input type="number" id="nb_weight" step="0.1" min="40" placeholder="70.5">
       </div>
       <div class="form-group">
-        <label>Catégorie de poids</label>
+        <label>Catégorie de poids de combat</label>
         <select id="nb_cat">
           <option value="">— Sélectionner —</option>
           ${WEIGHT_CATS_ELITE_H.map(c => `<option value="${c}">${c}</option>`).join('')}
@@ -520,13 +571,7 @@ function openCreateBoxerModal() {
           <option value="Femme">Femme</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Catégorie <span style="font-size:11px;color:var(--text-muted)">(auto depuis DDN)</span></label>
-        <select id="nb_compcat">
-          <option value="">— Sélectionner —</option>
-          ${COMPETITION_CATS.map(c => `<option value="${c}">${c}</option>`).join('')}
-        </select>
-      </div>
+      <input type="hidden" id="nb_compcat">
     </div>
 
     <div style="display:flex;gap:12px;justify-content:flex-end">
