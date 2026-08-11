@@ -155,7 +155,9 @@ function eventCardHTML(ev, showEdit = false) {
         const icon = rsvpIcon[status] || '…';
         const bg = status === 'accepted' ? 'rgba(46,204,113,0.15)' : status === 'declined' ? 'rgba(231,76,60,0.15)' : 'rgba(255,255,255,0.05)';
         const col = status === 'accepted' ? '#2ecc71' : status === 'declined' ? '#e74c3c' : 'var(--text-secondary)';
-        return `<span class="invitee-chip" style="background:${bg};color:${col}">${icon} ${b.first_name||b.email}</span>`;
+        const prefix = status !== 'pending' ? `${icon} ` : '';
+        const name = b.first_name || b.email;
+        return `<span class="invitee-chip" style="background:${bg};color:${col}">${prefix}${name}</span>`;
       }).join('');
 
   return `
@@ -431,6 +433,8 @@ async function openEventModal(eventId = null) {
   modal.classList.add('open');
 }
 
+let _boxerDropdownOpen = false;
+
 async function loadBoxerCheckboxes(selectedIds = []) {
   const container = document.getElementById('boxerCheckboxes');
   let boxers = allBoxers;
@@ -442,16 +446,76 @@ async function loadBoxerCheckboxes(selectedIds = []) {
     const name = fullName(b) || b.email;
     const checked = selectedIds.includes(b.user_id) ? 'checked' : '';
     return `
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--input-bg)">
-        <input type="checkbox" value="${b.user_id}" ${checked} style="width:16px;height:16px;accent-color:var(--primary)">
-        <div>
-          <div style="font-size:14px;font-weight:600">${name}</div>
-          <div style="font-size:12px;color:var(--text-muted)">${b.email}</div>
+      <label class="boxer-check-row" data-email="${b.email}">
+        <input type="checkbox" value="${b.user_id}" ${checked} onchange="updateBoxerChips()">
+        <div class="boxer-check-info">
+          <div class="boxer-check-name">${name}</div>
         </div>
+        <span class="boxer-check-tick">✓</span>
       </label>
     `;
   }).join('');
+  updateBoxerChips();
 }
+
+function filterBoxers(query) {
+  const q = query.toLowerCase().trim();
+  document.querySelectorAll('#boxerCheckboxes .boxer-check-row').forEach(row => {
+    const name  = row.querySelector('.boxer-check-name')?.textContent.toLowerCase() || '';
+    const email = (row.dataset.email || '').toLowerCase();
+    row.style.display = (!q || name.includes(q) || email.includes(q)) ? '' : 'none';
+  });
+}
+
+function toggleBoxerDropdown() {
+  const dropdown = document.getElementById('boxerMultiselectDropdown');
+  const trigger  = document.getElementById('boxerMultiselectTrigger');
+  _boxerDropdownOpen = !_boxerDropdownOpen;
+  dropdown.classList.toggle('open', _boxerDropdownOpen);
+  trigger.classList.toggle('active', _boxerDropdownOpen);
+  if (_boxerDropdownOpen) {
+    const search = document.getElementById('boxerSearchInput');
+    if (search) { search.value = ''; filterBoxers(''); search.focus(); }
+  }
+}
+
+function closeBoxerDropdown() {
+  _boxerDropdownOpen = false;
+  document.getElementById('boxerMultiselectDropdown')?.classList.remove('open');
+  document.getElementById('boxerMultiselectTrigger')?.classList.remove('active');
+  const search = document.getElementById('boxerSearchInput');
+  if (search) { search.value = ''; filterBoxers(''); }
+}
+
+function updateBoxerChips() {
+  const checked = [...document.querySelectorAll('#boxerCheckboxes input[type=checkbox]:checked')];
+  const labelEl = document.getElementById('boxerMultiselectLabel');
+  const chipsEl = document.getElementById('boxerSelectedChips');
+
+  if (labelEl) {
+    labelEl.textContent = checked.length
+      ? `${checked.length} boxeur${checked.length > 1 ? 's' : ''} sélectionné${checked.length > 1 ? 's' : ''}`
+      : 'Sélectionner des boxeurs…';
+  }
+
+  if (chipsEl) {
+    chipsEl.innerHTML = checked.map(cb => {
+      const row = cb.closest('.boxer-check-row');
+      const name = row?.querySelector('.boxer-check-name')?.textContent || cb.value;
+      return `<span class="boxer-chip">${name}<button type="button" onclick="removeBoxerChip(${cb.value})">×</button></span>`;
+    }).join('');
+  }
+}
+
+function removeBoxerChip(userId) {
+  const cb = document.querySelector(`#boxerCheckboxes input[value="${userId}"]`);
+  if (cb) { cb.checked = false; updateBoxerChips(); }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  if (_boxerDropdownOpen && !e.target.closest('#boxerMultiselect')) closeBoxerDropdown();
+});
 
 function togglePrivate(val) {
   const isPrivate = val === '1';

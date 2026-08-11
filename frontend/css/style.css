@@ -838,6 +838,123 @@ tr:hover td { background: rgba(201,160,32,0.03); }
 
 .required-star { color: #e57373; font-weight: 700; }
 
+/* ===== BOXER MULTI-SELECT DROPDOWN ===== */
+.boxer-multiselect { position: relative; }
+
+.boxer-multiselect-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s;
+}
+.boxer-multiselect-trigger:hover,
+.boxer-multiselect-trigger.active { border-color: var(--primary); }
+.boxer-multiselect-arrow { font-size: 12px; color: var(--text-muted); transition: transform 0.15s; }
+.boxer-multiselect-trigger.active .boxer-multiselect-arrow { transform: rotate(180deg); }
+
+.boxer-multiselect-dropdown {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow-y: auto;
+  max-height: 220px;
+}
+.boxer-multiselect-dropdown.open { display: block; }
+.boxer-multiselect-trigger.active { border-radius: 8px 8px 0 0; border-bottom-color: transparent; }
+
+.boxer-search-wrap {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--card-bg);
+  z-index: 1;
+}
+
+.boxer-search-input {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+.boxer-search-input:focus { outline: none; border-color: var(--primary); }
+.boxer-search-input::placeholder { color: var(--text-muted); }
+
+.boxer-check-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.boxer-check-row:last-child { border-bottom: none; }
+.boxer-check-row:hover { background: rgba(255,255,255,0.04); }
+.boxer-check-row input[type=checkbox] { display: none; }
+.boxer-check-info { flex: 1; min-width: 0; }
+.boxer-check-name { font-size: 14px; font-weight: 600; }
+.boxer-check-email { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.boxer-check-tick { font-size: 14px; color: var(--primary); opacity: 0; transition: opacity 0.1s; }
+.boxer-check-row:has(input:checked) { background: rgba(201,160,32,0.07); }
+.boxer-check-row:has(input:checked) .boxer-check-tick { opacity: 1; }
+
+.boxer-selected-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.boxer-selected-chips:empty { margin-bottom: 0; }
+
+.boxer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  background: rgba(255,255,255,0.07);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.boxer-chip button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.boxer-chip button:hover {
+  background: rgba(229,115,115,0.25);
+  color: #e57373;
+}
+
 .optional-tag {
   font-size: 10px;
   font-weight: 600;
