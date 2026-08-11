@@ -35,15 +35,15 @@ router.get('/coach', requireCoach, async (req, res) => {
 });
 
 router.post('/coach', requireCoach, async (req, res) => {
-  const { title, type, description, location, country, start_date, end_date, start_time, end_time, is_private, invite_all, boxer_ids } = req.body;
+  const { title, type, description, location, city, country, start_date, end_date, start_time, end_time, is_private, invite_all, boxer_ids } = req.body;
 
   if (!title || !start_date || !end_date) return res.status(400).json({ error: 'Titre et dates requis' });
 
   const [event] = await db.query(`
-    INSERT INTO events (title, type, description, location, country, start_date, end_date, start_time, end_time, is_private, invite_all)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    INSERT INTO events (title, type, description, location, city, country, start_date, end_date, start_time, end_time, is_private, invite_all)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *
-  `, [title, type || 'boxe', description, location, country, start_date, end_date, start_time, end_time, is_private ? 1 : 0, invite_all ? 1 : 0]);
+  `, [title, type || 'boxe', description, location, city, country, start_date, end_date, start_time, end_time, is_private ? 1 : 0, invite_all ? 1 : 0]);
 
   let boxersToInvite = [];
   if (invite_all) {
@@ -68,13 +68,13 @@ router.put('/coach/:id', requireCoach, async (req, res) => {
   const [ev] = await db.query('SELECT * FROM events WHERE id = $1', [req.params.id]);
   if (!ev) return res.status(404).json({ error: 'Événement introuvable' });
 
-  const { title, type, description, location, country, start_date, end_date, start_time, end_time, is_private, invite_all, boxer_ids } = req.body;
+  const { title, type, description, location, city, country, start_date, end_date, start_time, end_time, is_private, invite_all, boxer_ids } = req.body;
 
   await db.query(`
-    UPDATE events SET title=$1, type=$2, description=$3, location=$4, country=$5,
-      start_date=$6, end_date=$7, start_time=$8, end_time=$9, is_private=$10, invite_all=$11
-    WHERE id=$12
-  `, [title, type, description, location, country, start_date, end_date, start_time, end_time, is_private ? 1 : 0, invite_all ? 1 : 0, req.params.id]);
+    UPDATE events SET title=$1, type=$2, description=$3, location=$4, city=$5, country=$6,
+      start_date=$7, end_date=$8, start_time=$9, end_time=$10, is_private=$11, invite_all=$12
+    WHERE id=$13
+  `, [title, type, description, location, city, country, start_date, end_date, start_time, end_time, is_private ? 1 : 0, invite_all ? 1 : 0, req.params.id]);
 
   const [updated] = await db.query('SELECT * FROM events WHERE id = $1', [req.params.id]);
 

@@ -439,10 +439,10 @@
           </select>
           <!-- Invitations inline, juste sous la visibilité -->
           <div id="invitationsBlock" style="margin-top:12px">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:10px">
-              <input type="checkbox" id="ev_invite_all" onchange="toggleInviteAll(this.checked)" style="width:18px;height:18px;accent-color:var(--primary)">
-              <span style="font-size:14px;font-weight:600" id="ev_invite_all_label">Inviter <strong style="color:var(--primary)">tous les boxeurs</strong></span>
-            </label>
+            <div class="invite-row" onclick="document.getElementById('ev_invite_all').click()">
+              <input type="checkbox" id="ev_invite_all" onchange="toggleInviteAll(this.checked)" onclick="event.stopPropagation()">
+              <span id="ev_invite_all_label">Inviter <strong style="color:var(--primary)">tous les boxeurs</strong></span>
+            </div>
             <div id="boxerSelectList" style="display:none;margin-top:8px">
               <div id="boxerSelectedChips" class="boxer-selected-chips"></div>
               <div class="boxer-multiselect" id="boxerMultiselect">
@@ -506,11 +506,35 @@
 
         <div class="form-group">
           <label>Lieu <span class="optional-tag">Facultatif</span></label>
-          <input type="text" id="ev_location" placeholder="Salle de boxe Snatch">
+          <input type="text" id="ev_location" placeholder="Salle de boxe Snatch, Ring XYZ…">
+        </div>
+        <div class="form-group">
+          <label>Ville <span class="optional-tag">Facultatif</span></label>
+          <div class="location-autocomplete-wrap" style="position:relative">
+            <input type="text" id="ev_city" placeholder="Bruxelles, Liège…" autocomplete="off" oninput="filterCities(this.value)" onfocus="filterCities(this.value)" onblur="setTimeout(closeCityDropdown,150)">
+            <ul id="cityDropdown" class="city-dropdown" style="display:none"></ul>
+          </div>
         </div>
         <div class="form-group">
           <label>Pays <span class="optional-tag">Facultatif</span></label>
-          <input type="text" id="ev_country" placeholder="France">
+          <select id="ev_country">
+            <option value="">— Sélectionner —</option>
+            <option value="Belgique" selected>Belgique</option>
+            <option value="France">France</option>
+            <option value="Luxembourg">Luxembourg</option>
+            <option value="Pays-Bas">Pays-Bas</option>
+            <option value="Allemagne">Allemagne</option>
+            <option value="Royaume-Uni">Royaume-Uni</option>
+            <option value="Suisse">Suisse</option>
+            <option value="Espagne">Espagne</option>
+            <option value="Italie">Italie</option>
+            <option value="Portugal">Portugal</option>
+            <option value="Maroc">Maroc</option>
+            <option value="Algérie">Algérie</option>
+            <option value="Tunisie">Tunisie</option>
+            <option value="Turquie">Turquie</option>
+            <option value="Autre">Autre</option>
+          </select>
         </div>
         <div class="form-group full-width">
           <label>Description <span class="optional-tag">Facultatif</span></label>

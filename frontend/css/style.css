@@ -836,7 +836,28 @@ tr:hover td { background: rgba(201,160,32,0.03); }
 
 .modal-body { padding: 24px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
 
-.required-star { color: #e57373; font-weight: 700; }
+.required-star { color: #e57373 !important; font-weight: 700; font-size: 14px; }
+
+/* Empêcher le style .form-group label de s'appliquer aux labels non-champs à l'intérieur */
+.form-group .invite-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.form-group .invite-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--primary); flex-shrink: 0; }
+
+/* Forcer 1 colonne dans le modal event sur mobile */
+@media (max-width: 600px) {
+  .modal .form-grid { grid-template-columns: 1fr; }
+  .modal .form-grid .form-group { grid-column: 1; }
+}
 
 /* ===== BOXER MULTI-SELECT DROPDOWN ===== */
 .boxer-multiselect { position: relative; }
@@ -954,6 +975,30 @@ tr:hover td { background: rgba(201,160,32,0.03); }
   background: rgba(229,115,115,0.25);
   color: #e57373;
 }
+
+.location-autocomplete-wrap { position: relative; }
+.city-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  z-index: 200;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  list-style: none;
+  margin: 0; padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.city-dropdown li {
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.12s;
+}
+.city-dropdown li:hover { background: rgba(255,255,255,0.07); }
 
 .optional-tag {
   font-size: 10px;

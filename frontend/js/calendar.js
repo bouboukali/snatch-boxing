@@ -199,12 +199,21 @@ function calNextMonth() {
 function onDateChange(inputId) {
   const val = document.getElementById(inputId).value;
   const txtEl = document.getElementById(inputId + '_txt');
-  if (!txtEl) return;
-  if (val) {
-    const [y, m, d] = val.split('-');
-    txtEl.textContent = `· ${d}/${m}/${y}`;
-  } else {
-    txtEl.textContent = '';
+  if (txtEl) {
+    txtEl.textContent = val ? `· ${val.split('-').reverse().join('/')}` : '';
+  }
+
+  const startEl = document.getElementById('ev_start_date');
+  const endEl   = document.getElementById('ev_end_date');
+
+  if (inputId === 'ev_start_date' && val) {
+    // Empêcher une date de fin antérieure à la date de début
+    endEl.min = val;
+    // Si la date de fin est antérieure, la mettre à jour automatiquement
+    if (endEl.value && endEl.value < val) {
+      endEl.value = val;
+      onDateChange('ev_end_date');
+    }
   }
 }
 
@@ -267,6 +276,7 @@ function initDrum(colId, items, defaultValue) {
       snapDrum(col);
       updateDrumActive(col);
       updateDuration();
+      if (colId === 'drum_sh' || colId === 'drum_sm') syncEndTimeIfNeeded();
     }, 80);
   });
 }
@@ -344,6 +354,33 @@ function updateDuration() {
   el.style.display = 'inline-block';
 }
 
+function syncEndTimeIfNeeded() {
+  // Si les dates de début et de fin sont identiques, l'heure de fin ne peut pas être avant l'heure de début
+  const startDate = document.getElementById('ev_start_date')?.value;
+  const endDate   = document.getElementById('ev_end_date')?.value;
+  if (startDate && endDate && startDate !== endDate) return;
+
+  const sh = getDrumValue('drum_sh');
+  const sm = getDrumValue('drum_sm');
+  const eh = getDrumValue('drum_eh');
+  const em = getDrumValue('drum_em');
+
+  const startMins = parseInt(sh) * 60 + parseInt(sm);
+  const endMins   = parseInt(eh) * 60 + parseInt(em);
+
+  if (endMins <= startMins) {
+    // Mettre l'heure de fin = heure de début + 1h (ou minuit si dépassement)
+    const newEndMins = Math.min(startMins + 60, 23 * 60 + 55);
+    const newEh = String(Math.floor(newEndMins / 60)).padStart(2, '0');
+    const rawMin = newEndMins % 60;
+    // Arrondir aux 5 minutes les plus proches disponibles dans le drum
+    const newEm = String(Math.round(rawMin / 5) * 5).padStart(2, '0');
+    setDrumValue('drum_eh', newEh);
+    setDrumValue('drum_em', newEm === '60' ? '55' : newEm);
+    updateDuration();
+  }
+}
+
 // ===== DURATION LABEL (for display in cards) =====
 
 function calcDurationLabel(startTime, endTime) {
@@ -355,6 +392,46 @@ function calcDurationLabel(startTime, endTime) {
   const h = Math.floor(diff / 60);
   const m = diff % 60;
   return h > 0 ? (m > 0 ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`) : `${m}min`;
+}
+
+// ===== CITY AUTOCOMPLETE =====
+
+const BELGIAN_CITIES = [
+  // Bruxelles-Capitale
+  'Bruxelles','Anderlecht','Etterbeek','Ixelles','Jette','Koekelberg','Laeken',
+  'Molenbeek-Saint-Jean','Saint-Gilles','Saint-Josse-ten-Noode','Schaerbeek',
+  'Uccle','Woluwe-Saint-Lambert','Woluwe-Saint-Pierre',
+  // Flandre
+  'Anvers','Gand','Bruges','Louvain','Courtrai','Hasselt','Genk','Alost',
+  'Malines','Sint-Niklaas','Tongres','Roeselare','Turnhout','Ostende',
+  // Wallonie
+  'Liège','Charleroi','Namur','Mons','La Louvière','Seraing','Verviers',
+  'Mouscron','Tournai','Herstal','Wavre','Arlon','Marche-en-Famenne',
+  'Bastogne','Huy','Ottignies-Louvain-la-Neuve',
+  // Frontalières fréquentes
+  'Lille','Paris','Luxembourg','Maastricht','Aix-la-Chapelle',
+];
+
+function filterCities(query) {
+  const dropdown = document.getElementById('cityDropdown');
+  const q = query.trim().toLowerCase();
+  if (!q) { dropdown.style.display = 'none'; return; }
+  const matches = BELGIAN_CITIES.filter(c => c.toLowerCase().startsWith(q)).slice(0, 8);
+  if (!matches.length) { dropdown.style.display = 'none'; return; }
+  dropdown.innerHTML = matches.map(c =>
+    `<li onmousedown="selectCity('${c}')">${c}</li>`
+  ).join('');
+  dropdown.style.display = 'block';
+}
+
+function selectCity(city) {
+  document.getElementById('ev_city').value = city;
+  closeCityDropdown();
+}
+
+function closeCityDropdown() {
+  const d = document.getElementById('cityDropdown');
+  if (d) d.style.display = 'none';
 }
 
 // ===== EVENT MODAL =====
@@ -372,7 +449,8 @@ async function openEventModal(eventId = null) {
   setDateField('ev_start_date', '');
   setDateField('ev_end_date', '');
   document.getElementById('ev_location').value = '';
-  document.getElementById('ev_country').value = 'France';
+  document.getElementById('ev_city').value = '';
+  document.getElementById('ev_country').value = 'Belgique';
   document.getElementById('ev_description').value = '';
   document.getElementById('ev_invite_all').checked = false;
   document.getElementById('boxerSelectList').style.display = 'none';
@@ -395,7 +473,8 @@ async function openEventModal(eventId = null) {
       setDateField('ev_start_date', ev.start_date);
       setDateField('ev_end_date', ev.end_date);
       document.getElementById('ev_location').value = ev.location || '';
-      document.getElementById('ev_country').value = ev.country || 'France';
+      document.getElementById('ev_city').value = ev.city || '';
+      document.getElementById('ev_country').value = ev.country || 'Belgique';
       document.getElementById('ev_description').value = ev.description || '';
 
       if (ev.start_time) {
@@ -608,6 +687,7 @@ async function saveEvent() {
     start_time,
     end_time,
     location:    document.getElementById('ev_location').value.trim() || null,
+    city:        document.getElementById('ev_city').value.trim() || null,
     country:     document.getElementById('ev_country').value.trim() || null,
     description: document.getElementById('ev_description').value.trim() || null,
     invite_all,
