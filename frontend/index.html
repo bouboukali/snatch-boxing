@@ -231,9 +231,21 @@
               <label>Nom</label>
               <input type="text" id="pLastName" placeholder="Dupont">
             </div>
-            <div class="form-group">
+            <div class="form-group full-width">
               <label>Email</label>
-              <input type="email" id="pEmail" disabled style="opacity:0.5">
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <input type="email" id="pEmail" disabled style="opacity:0.5;flex:1;min-width:0">
+                <button class="btn btn-sm btn-secondary" style="flex-shrink:0;width:auto" onclick="showEmailChangeForm()">Changer</button>
+              </div>
+              <div id="emailChangeForm" style="display:none;margin-top:12px;padding:14px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px">
+                <label style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Nouvelle adresse email</label>
+                <input type="email" id="newEmailInput" placeholder="nouveau@email.fr" style="margin-top:6px;margin-bottom:10px">
+                <div id="emailChangeMsg" style="font-size:13px;margin-bottom:8px;display:none"></div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-primary btn-sm" style="width:auto" onclick="submitEmailChange()">Envoyer le lien de confirmation</button>
+                  <button class="btn btn-secondary btn-sm" style="width:auto" onclick="hideEmailChangeForm()">Annuler</button>
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label>Téléphone</label>

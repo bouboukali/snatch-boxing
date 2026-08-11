@@ -5,7 +5,7 @@ const SECRET = 'test-secret';
 
 const mockDb = { query: jest.fn() };
 jest.mock('../backend/db', () => mockDb);
-jest.mock('../backend/mailer', () => ({ sendInvitation: jest.fn() }));
+jest.mock('../backend/mailer', () => ({ sendInvitation: jest.fn(), sendEmailConfirmation: jest.fn().mockResolvedValue(true) }));
 jest.mock('../backend/email', () => ({ sendPaymentReminder: jest.fn(), sendEventInvitation: jest.fn() }));
 
 let app;
@@ -89,6 +89,67 @@ describe('GET /api/boxer/documents', () => {
     const res = await request(app).get('/api/boxer/documents').set(boxer());
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
+  });
+});
+
+// ===== POST /api/boxer/request-email-change =====
+describe('POST /api/boxer/request-email-change', () => {
+  test('200 envoie un email de confirmation', async () => {
+    const { sendEmailConfirmation } = require('../backend/mailer');
+    mockDb.query
+      .mockResolvedValueOnce([])                          // pas de conflit email
+      .mockResolvedValueOnce([])                          // UPDATE pending_email
+      .mockResolvedValueOnce([{ first_name: 'Ali' }]);    // SELECT prénom
+
+    const res = await request(app)
+      .post('/api/boxer/request-email-change')
+      .set(boxer())
+      .send({ new_email: 'nouveau@boxing.fr' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toContain('nouveau@boxing.fr');
+  });
+
+  test('400 si new_email manquant', async () => {
+    const res = await request(app)
+      .post('/api/boxer/request-email-change')
+      .set(boxer())
+      .send({});
+    expect(res.status).toBe(400);
+  });
+
+  test('400 si email invalide', async () => {
+    const res = await request(app)
+      .post('/api/boxer/request-email-change')
+      .set(boxer())
+      .send({ new_email: 'pas-un-email' });
+    expect(res.status).toBe(400);
+  });
+
+  test('409 si email déjà utilisé par un autre compte', async () => {
+    mockDb.query.mockResolvedValueOnce([{ id: 99 }]); // conflit
+
+    const res = await request(app)
+      .post('/api/boxer/request-email-change')
+      .set(boxer())
+      .send({ new_email: 'pris@boxing.fr' });
+    expect(res.status).toBe(409);
+  });
+
+  test('401 sans token', async () => {
+    const res = await request(app)
+      .post('/api/boxer/request-email-change')
+      .send({ new_email: 'test@boxing.fr' });
+    expect(res.status).toBe(401);
+  });
+
+  test('403 si coach tente d\'utiliser l\'endpoint', async () => {
+    const res = await request(app)
+      .post('/api/boxer/request-email-change')
+      .set(coach())
+      .send({ new_email: 'test@boxing.fr' });
+    expect(res.status).toBe(403);
   });
 });
 

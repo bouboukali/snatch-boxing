@@ -148,7 +148,14 @@ router.put('/boxers/:userId', requireCoach, async (req, res) => {
   const [user] = await db.query('SELECT id FROM users WHERE id = $1 AND role = $2', [req.params.userId, 'boxer']);
   if (!user) return res.status(404).json({ error: 'Boxeur introuvable' });
 
-  const { first_name, last_name, physical_address, license_number, wins, losses, draws, weight, weight_category, phone, date_of_birth, gender, competition_category } = req.body;
+  const { email, first_name, last_name, physical_address, license_number, wins, losses, draws, weight, weight_category, phone, date_of_birth, gender, competition_category } = req.body;
+
+  if (email) {
+    const normalized = email.toLowerCase().trim();
+    const [conflict] = await db.query('SELECT id FROM users WHERE email = $1 AND id != $2', [normalized, req.params.userId]);
+    if (conflict) return res.status(409).json({ error: 'Cet email est déjà utilisé' });
+    await db.query('UPDATE users SET email = $1 WHERE id = $2', [normalized, req.params.userId]);
+  }
   const now = new Date().toISOString();
 
   await db.query(`

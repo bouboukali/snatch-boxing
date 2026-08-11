@@ -112,6 +112,81 @@ test.describe('Modal ajout boxeur mobile', () => {
   });
 });
 
+// ===== CHAMPS OBLIGATOIRES — FORMULAIRE AJOUT BOXEUR =====
+test.describe('Validation champs obligatoires — ajout boxeur', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('.dash-kpi-row', { timeout: 8000 });
+    await page.evaluate(() => { (window as any).showPage('coach-boxers'); });
+    await page.waitForSelector('#coachBoxersPage', { timeout: 5000 });
+    await page.evaluate(() => { (window as any).openCreateBoxerModal(); });
+    await page.waitForSelector('.modal-overlay.open', { timeout: 3000 });
+  });
+
+  test('les champs obligatoires affichent un astérisque rouge', async ({ page }) => {
+    const stars = page.locator('.required-star');
+    const count = await stars.count();
+    expect(count).toBeGreaterThanOrEqual(3); // email, prénom, nom
+  });
+
+  test('note "champs obligatoires" visible en haut du formulaire', async ({ page }) => {
+    await expect(page.locator('text=obligatoires')).toBeVisible();
+  });
+
+  test('erreur si on soumet sans prénom ni nom', async ({ page }) => {
+    await page.locator('#nb_email').fill('test@boxing.fr');
+    // prénom et nom vides — clic sur Créer
+    const modalBody = page.locator('.modal-body');
+    await modalBody.evaluate(el => el.scrollTo(0, el.scrollHeight));
+    await page.locator('button:has-text("Créer")').click();
+    await expect(page.locator('.error-msg')).toBeVisible();
+  });
+});
+
+// ===== CHANGEMENT EMAIL — PROFIL BOXEUR =====
+test.describe('Changement email — profil boxeur', () => {
+  test.beforeEach(async ({ page }) => {
+    // Injection d'un token boxer
+    await page.goto('/');
+    await page.evaluate(async () => {
+      const secret = 'boxing-secret-2024';
+      async function makeJWT(payload: any) {
+        const enc = (s: string) => btoa(JSON.stringify(s)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+        const header = enc({alg:'HS256',typ:'JWT'});
+        const body = enc(payload);
+        const data = header + '.' + body;
+        const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+        const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
+        return data + '.' + btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+      }
+      const token = await makeJWT({id:1, email:'boxer@boxing.fr', role:'boxer', exp: Math.floor(Date.now()/1000)+3600});
+      localStorage.setItem('bm_token', token);
+      localStorage.setItem('bm_role', 'boxer');
+      localStorage.setItem('bm_email', 'boxer@boxing.fr');
+    });
+    await page.reload();
+    await page.waitForSelector('.dash-kpi-row', { timeout: 8000 });
+    await page.evaluate(() => { (window as any).showPage('boxer-profile'); });
+    await page.waitForSelector('#page-boxer-profile', { timeout: 5000 });
+  });
+
+  test('bouton Changer visible à côté du champ email', async ({ page }) => {
+    await expect(page.locator('button:has-text("Changer")')).toBeVisible();
+  });
+
+  test('formulaire de changement s\'ouvre au clic', async ({ page }) => {
+    await page.locator('button:has-text("Changer")').click();
+    await expect(page.locator('#emailChangeForm')).toBeVisible();
+    await expect(page.locator('#newEmailInput')).toBeVisible();
+  });
+
+  test('formulaire se ferme au clic Annuler', async ({ page }) => {
+    await page.locator('button:has-text("Changer")').click();
+    await page.locator('button:has-text("Annuler")').click();
+    await expect(page.locator('#emailChangeForm')).toBeHidden();
+  });
+});
+
 // ===== NAVIGATION MOBILE =====
 test.describe('Navigation mobile', () => {
   test.beforeEach(async ({ page }) => {

@@ -2,8 +2,10 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const db = require('../db');
 const { requireBoxer } = require('../middleware/auth');
+const { sendEmailConfirmation } = require('../mailer');
 
 const router = express.Router();
 
@@ -81,6 +83,39 @@ router.delete('/documents/:id', requireBoxer, async (req, res) => {
 
   await db.query('DELETE FROM documents WHERE id = $1', [req.params.id]);
   res.json({ success: true });
+});
+
+router.post('/request-email-change', requireBoxer, async (req, res) => {
+  const { new_email } = req.body;
+  if (!new_email) return res.status(400).json({ error: 'Nouvel email requis' });
+
+  const normalized = new_email.toLowerCase().trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(normalized)) return res.status(400).json({ error: 'Email invalide' });
+
+  const [existing] = await db.query('SELECT id FROM users WHERE email = $1 AND id != $2', [normalized, req.user.id]);
+  if (existing) return res.status(409).json({ error: 'Cet email est déjà utilisé' });
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1h
+
+  await db.query(
+    'UPDATE users SET pending_email = $1, email_token = $2, email_token_expires = $3 WHERE id = $4',
+    [normalized, token, expires, req.user.id]
+  );
+
+  const [profile] = await db.query('SELECT first_name FROM boxer_profiles WHERE user_id = $1', [req.user.id]);
+  const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+  const confirmUrl = `${baseUrl}/api/auth/confirm-email?token=${token}`;
+
+  try {
+    await sendEmailConfirmation(normalized, profile?.first_name, confirmUrl);
+  } catch (e) {
+    console.error('Erreur envoi email confirmation:', e.message);
+    return res.status(500).json({ error: "Impossible d'envoyer l'email de confirmation" });
+  }
+
+  res.json({ success: true, message: `Un email de confirmation a été envoyé à ${normalized}` });
 });
 
 router.get('/payments', requireBoxer, async (req, res) => {

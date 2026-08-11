@@ -796,7 +796,9 @@ tr:hover td { background: rgba(201,160,32,0.03); }
   width: 100%;
   max-width: 700px;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
   box-shadow: 0 32px 80px rgba(0,0,0,0.8);
 }
 
@@ -806,8 +808,7 @@ tr:hover td { background: rgba(201,160,32,0.03); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   background: #0f0f0f;
   z-index: 1;
 }
@@ -831,7 +832,9 @@ tr:hover td { background: rgba(201,160,32,0.03); }
 }
 .modal-close:hover { color: var(--text); border-color: #444; }
 
-.modal-body { padding: 24px; }
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+
+.required-star { color: #e57373; font-weight: 700; }
 
 /* ===== SEARCH ===== */
 .search-bar { position: relative; margin-bottom: 12px; }
@@ -1402,20 +1405,7 @@ input[type="date"] {
 
   /* Modal: bottom sheet sur mobile */
   .modal-overlay { padding: 0; align-items: flex-end; }
-  .modal {
-    border-radius: 16px 16px 0 0;
-    max-height: 92vh;
-    max-width: 100%;
-    overflow-y: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-  .modal-header { flex-shrink: 0; }
-  .modal-body {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    flex: 1;
-  }
+  .modal { border-radius: 16px 16px 0 0; max-height: 92vh; max-width: 100%; }
 
   /* Dashboard KPI: 3 colonnes compactes sur mobile */
   .dash-kpi-row { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }

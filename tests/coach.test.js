@@ -166,6 +166,38 @@ describe('PUT /api/coach/boxers/:userId', () => {
   });
 });
 
+// ===== PUT /api/coach/boxers/:userId — changement email =====
+describe('PUT /api/coach/boxers/:userId — email', () => {
+  test('200 met à jour l\'email si pas de conflit', async () => {
+    mockDb.query
+      .mockResolvedValueOnce([{ id: 1 }])   // SELECT user
+      .mockResolvedValueOnce([])             // SELECT conflit email → vide
+      .mockResolvedValueOnce([])             // UPDATE users.email
+      .mockResolvedValueOnce([]);            // INSERT/UPDATE boxer_profiles
+
+    const res = await request(app)
+      .put('/api/coach/boxers/1')
+      .set(authHeader())
+      .send({ email: 'nouveau@boxing.fr', first_name: 'Ali', last_name: 'Mohammed' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  test('409 si le nouvel email est déjà utilisé', async () => {
+    mockDb.query
+      .mockResolvedValueOnce([{ id: 1 }])    // SELECT user
+      .mockResolvedValueOnce([{ id: 99 }]);  // SELECT conflit email → pris
+
+    const res = await request(app)
+      .put('/api/coach/boxers/1')
+      .set(authHeader())
+      .send({ email: 'pris@boxing.fr', first_name: 'Ali', last_name: 'Mohammed' });
+
+    expect(res.status).toBe(409);
+  });
+});
+
 // ===== DELETE /api/coach/boxers/:userId =====
 describe('DELETE /api/coach/boxers/:userId', () => {
   test('200 supprime le boxeur', async () => {

@@ -40,6 +40,50 @@ router.post('/change-password', async (req, res) => {
   res.json({ success: true });
 });
 
+router.get('/confirm-email', async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).send('Token manquant');
+
+  const [user] = await db.query(
+    'SELECT id, pending_email, email_token_expires FROM users WHERE email_token = $1',
+    [token]
+  );
+
+  if (!user) return res.status(400).send('Lien invalide ou déjà utilisé');
+  if (new Date(user.email_token_expires) < new Date()) {
+    return res.status(400).send('Lien expiré. Faites une nouvelle demande depuis l\'application.');
+  }
+
+  await db.query(
+    'UPDATE users SET email = $1, pending_email = NULL, email_token = NULL, email_token_expires = NULL WHERE id = $2',
+    [user.pending_email, user.id]
+  );
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head><meta charset="UTF-8"><title>Email confirmé</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>
+      body{font-family:Arial,sans-serif;background:#080808;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+      .box{text-align:center;padding:40px;background:#141414;border-radius:12px;max-width:420px;border:1px solid #222}
+      h2{color:#C9A020;margin-bottom:8px}
+      p{color:#aaa;margin:12px 0}
+      a{display:inline-block;margin-top:20px;padding:12px 28px;background:#C9A020;color:#000;font-weight:700;border-radius:8px;text-decoration:none}
+    </style>
+    </head>
+    <body>
+      <div class="box">
+        <h2>Email confirmé ✓</h2>
+        <p>Votre adresse email a bien été mise à jour.</p>
+        <p>Reconnectez-vous avec votre nouvelle adresse.</p>
+        <a href="/">Retour à l'application</a>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
 router.post('/register-boxer', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Champs requis' });

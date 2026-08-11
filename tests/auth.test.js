@@ -3,6 +3,8 @@ const request = require('supertest');
 // Mock DB avant de charger l'app
 // Les hashes sont inlinés directement (jest.mock factory ne peut pas accéder au scope extérieur)
 // hash de 'password123' et 'temppass' générés avec bcrypt.hashSync(..., 10)
+jest.mock('../backend/mailer', () => ({ sendInvitation: jest.fn(), sendEmailConfirmation: jest.fn() }));
+
 jest.mock('../backend/db', () => {
   const users = [
     {
@@ -83,6 +85,45 @@ describe('POST /api/auth/login', () => {
       .post('/api/auth/login')
       .send({ email: 'coach@boxing.fr' });
     expect(res.status).toBe(400);
+  });
+});
+
+describe('GET /api/auth/confirm-email', () => {
+  const futureDate = new Date(Date.now() + 3600 * 1000).toISOString();
+  const pastDate   = new Date(Date.now() - 1000).toISOString();
+
+  test('200 confirme le changement d\'email avec un token valide', async () => {
+    const mockDbModule = require('../backend/db');
+    mockDbModule.query
+      .mockResolvedValueOnce([{ id: 1, pending_email: 'nouveau@boxing.fr', email_token_expires: futureDate }])
+      .mockResolvedValueOnce([]);
+
+    const res = await request(app).get('/api/auth/confirm-email?token=validtoken123');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('confirmé');
+  });
+
+  test('400 si token manquant', async () => {
+    const res = await request(app).get('/api/auth/confirm-email');
+    expect(res.status).toBe(400);
+  });
+
+  test('400 si token invalide (introuvable en DB)', async () => {
+    const mockDbModule = require('../backend/db');
+    mockDbModule.query.mockResolvedValueOnce([]);
+
+    const res = await request(app).get('/api/auth/confirm-email?token=tokeninconnu');
+    expect(res.status).toBe(400);
+    expect(res.text).toContain('invalide');
+  });
+
+  test('400 si token expiré', async () => {
+    const mockDbModule = require('../backend/db');
+    mockDbModule.query.mockResolvedValueOnce([{ id: 1, pending_email: 'nouveau@boxing.fr', email_token_expires: pastDate }]);
+
+    const res = await request(app).get('/api/auth/confirm-email?token=tokenexpiré');
+    expect(res.status).toBe(400);
+    expect(res.text).toContain('expiré');
   });
 });
 

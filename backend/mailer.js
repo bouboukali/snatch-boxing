@@ -31,4 +31,25 @@ async function sendInvitation(toEmail, firstName, tempPassword) {
   });
 }
 
-module.exports = { sendInvitation };
+async function sendEmailConfirmation(toEmail, firstName, confirmUrl) {
+  const name = firstName || toEmail;
+  await transporter.sendMail({
+    from: `"Snatch Boxing Academy" <${process.env.MAIL_USER}>`,
+    to: toEmail,
+    subject: 'Confirmez votre nouvelle adresse email',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#080808;color:#fff;padding:32px;border-radius:12px">
+        <h2 style="color:#C9A020;margin-bottom:8px">Snatch Boxing Academy</h2>
+        <p>Bonjour ${name},</p>
+        <p>Vous avez demandé à changer votre adresse email. Cliquez sur le bouton ci-dessous pour confirmer.</p>
+        <a href="${confirmUrl}" style="display:inline-block;margin:20px 0;padding:14px 28px;background:#C9A020;color:#000;font-weight:700;border-radius:8px;text-decoration:none">
+          Confirmer mon email
+        </a>
+        <p style="color:#888;font-size:13px">Ce lien est valable 1 heure. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+        <p style="color:#888;font-size:12px;margin-top:32px">Snatch Boxing Academy</p>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendInvitation, sendEmailConfirmation };

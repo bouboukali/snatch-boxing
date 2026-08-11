@@ -312,16 +312,21 @@ function renderBoxerModalEdit() {
   document.getElementById('modalBody').innerHTML = `
     <div id="editSuccess" class="success-msg"></div>
     <div id="editError" class="error-msg"></div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Les champs marqués <span class="required-star">*</span> sont obligatoires.</p>
 
     <div class="section-title">Informations personnelles</div>
     <div class="form-grid" style="margin-bottom:20px">
       <div class="form-group">
-        <label>Prénom</label>
+        <label>Prénom <span class="required-star">*</span></label>
         <input type="text" id="eb_first" value="${b.first_name||''}">
       </div>
       <div class="form-group">
-        <label>Nom</label>
+        <label>Nom <span class="required-star">*</span></label>
         <input type="text" id="eb_last" value="${b.last_name||''}">
+      </div>
+      <div class="form-group full-width">
+        <label>Email <span class="required-star">*</span></label>
+        <input type="email" id="eb_email" value="${b.email||''}">
       </div>
       <div class="form-group">
         <label>Téléphone</label>
@@ -391,9 +396,19 @@ function renderBoxerModalEdit() {
 }
 
 async function saveBoxerEdit(userId) {
+  const email = document.getElementById('eb_email').value.trim().toLowerCase();
+  const first = document.getElementById('eb_first').value.trim();
+  const last  = document.getElementById('eb_last').value.trim();
+  if (!email || !first || !last) {
+    const errEl = document.getElementById('editError');
+    errEl.textContent = 'Email, prénom et nom sont obligatoires.';
+    errEl.style.display = 'block';
+    return;
+  }
   const body = {
-    first_name:       document.getElementById('eb_first').value.trim(),
-    last_name:        document.getElementById('eb_last').value.trim(),
+    email,
+    first_name:       first,
+    last_name:        last,
     phone:            document.getElementById('eb_phone').value.trim(),
     date_of_birth:    document.getElementById('eb_dob').value,
     license_number:   document.getElementById('eb_license').value.trim(),
@@ -500,11 +515,12 @@ function openCreateBoxerModal() {
   document.getElementById('modalTitle').textContent = '+ Nouveau boxeur';
   document.getElementById('modalBody').innerHTML = `
     <div id="createBoxerError" class="error-msg"></div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Les champs marqués <span class="required-star">*</span> sont obligatoires.</p>
 
     <div class="section-title">Identifiants de connexion</div>
     <div class="form-grid" style="margin-bottom:20px">
       <div class="form-group full-width">
-        <label>Email *</label>
+        <label>Email <span class="required-star">*</span></label>
         <input type="email" id="nb_email" placeholder="boxeur@email.fr">
         <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Un email d'invitation sera envoyé automatiquement.</div>
       </div>
@@ -513,11 +529,11 @@ function openCreateBoxerModal() {
     <div class="section-title">Informations personnelles</div>
     <div class="form-grid" style="margin-bottom:20px">
       <div class="form-group">
-        <label>Prénom</label>
+        <label>Prénom <span class="required-star">*</span></label>
         <input type="text" id="nb_first" placeholder="Jean">
       </div>
       <div class="form-group">
-        <label>Nom</label>
+        <label>Nom <span class="required-star">*</span></label>
         <input type="text" id="nb_last" placeholder="Dupont">
       </div>
       <div class="form-group">
@@ -584,7 +600,12 @@ function openCreateBoxerModal() {
 
 async function saveNewBoxer() {
   const email = document.getElementById('nb_email').value.trim();
-  if (!email) { showFormError('createBoxerError', 'L\'email est requis.'); return; }
+  const first = document.getElementById('nb_first').value.trim();
+  const last  = document.getElementById('nb_last').value.trim();
+  if (!email || !first || !last) {
+    showFormError('createBoxerError', 'Email, prénom et nom sont obligatoires.');
+    return;
+  }
 
   const body = {
     email,

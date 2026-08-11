@@ -53,6 +53,53 @@ async function saveProfile() {
   else showToast('Erreur lors de la sauvegarde', 'error');
 }
 
+// ===== CHANGEMENT D'EMAIL =====
+
+function showEmailChangeForm() {
+  document.getElementById('emailChangeForm').style.display = 'block';
+  document.getElementById('newEmailInput').focus();
+  hideEmailChangeMsg();
+}
+
+function hideEmailChangeForm() {
+  document.getElementById('emailChangeForm').style.display = 'none';
+  document.getElementById('newEmailInput').value = '';
+  hideEmailChangeMsg();
+}
+
+function hideEmailChangeMsg() {
+  const msg = document.getElementById('emailChangeMsg');
+  msg.style.display = 'none';
+  msg.textContent = '';
+}
+
+function showEmailChangeMsg(text, isError) {
+  const msg = document.getElementById('emailChangeMsg');
+  msg.textContent = text;
+  msg.style.color = isError ? '#e57373' : '#81c784';
+  msg.style.display = 'block';
+}
+
+async function submitEmailChange() {
+  const newEmail = document.getElementById('newEmailInput').value.trim();
+  if (!newEmail) return showEmailChangeMsg('Veuillez saisir un email.', true);
+
+  const res = await apiFetch('/api/boxer/request-email-change', {
+    method: 'POST',
+    body: JSON.stringify({ new_email: newEmail })
+  });
+  if (!res) return;
+
+  if (res.ok) {
+    const data = await res.json();
+    showEmailChangeMsg(data.message, false);
+    document.getElementById('newEmailInput').disabled = true;
+  } else {
+    const err = await res.json();
+    showEmailChangeMsg(err.error || 'Erreur', true);
+  }
+}
+
 // ===== DOCUMENTS =====
 
 async function loadDocuments() {
