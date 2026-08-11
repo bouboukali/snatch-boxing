@@ -299,6 +299,18 @@ function closeSidebar() {
   document.getElementById('hamburgerBtn').classList.remove('open');
 }
 
+// ===== iOS MODAL SCROLL FIX =====
+// Prevent overlay from swallowing touch events, but allow scroll inside .modal-body
+document.addEventListener('touchmove', function(e) {
+  const overlay = e.target.closest('.modal-overlay');
+  if (!overlay) return;
+  const body = e.target.closest('.modal-body');
+  if (!body) { e.preventDefault(); return; }
+  // Allow scroll only if the body is actually scrollable
+  const canScroll = body.scrollHeight > body.clientHeight;
+  if (!canScroll) e.preventDefault();
+}, { passive: false });
+
 // ===== KEYBOARD & MODAL EVENTS =====
 
 document.addEventListener('keydown', e => {

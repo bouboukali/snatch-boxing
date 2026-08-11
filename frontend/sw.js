@@ -1,4 +1,4 @@
-const CACHE_NAME = 'snatch-v6';
+const CACHE_NAME = 'snatch-v8';
 
 const STATIC_ASSETS = [
   '/',

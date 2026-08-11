@@ -24,6 +24,7 @@ function getEvColor(type) {
 
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const DAYS_FR   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+const DAYS_WEEKEND = new Set([5, 6]); // indices Sam=5, Dim=6
 
 let calYear, calMonth, allEvents = [];
 let editingEventId = null;
@@ -45,7 +46,9 @@ function renderCalendar() {
   const grid = document.getElementById('calGrid');
   if (!grid) return;
 
-  let html = DAYS_FR.map(d => `<div class="cal-day-name">${d}</div>`).join('');
+  let html = DAYS_FR.map((d, i) =>
+    `<div class="cal-day-name ${DAYS_WEEKEND.has(i) ? 'weekend' : ''}">${d}</div>`
+  ).join('');
 
   const firstDay = new Date(calYear, calMonth, 1);
   const lastDay  = new Date(calYear, calMonth + 1, 0);
@@ -55,32 +58,49 @@ function renderCalendar() {
 
   for (let i = startOffset - 1; i >= 0; i--) {
     const d = new Date(calYear, calMonth, -i);
-    html += `<div class="cal-day other-month"><div class="cal-day-num">${d.getDate()}</div></div>`;
+    const col = (startOffset - 1 - i);
+    html += `<div class="cal-day other-month ${DAYS_WEEKEND.has(col) ? 'weekend' : ''}"><div class="cal-day-num">${d.getDate()}</div></div>`;
   }
 
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = today.getFullYear()===calYear && today.getMonth()===calMonth && today.getDate()===d;
+    const col = (startOffset + d - 1) % 7;
+    const isWeekend = DAYS_WEEKEND.has(col);
 
     const dayEvents = allEvents.filter(ev => ev.start_date <= dateStr && ev.end_date >= dateStr);
 
-    const dots = dayEvents.slice(0,3).map(ev => {
-      const t = getEvType(ev.type);
-      return `<div class="cal-event-dot ${t.css}" onclick="event.stopPropagation();openEventModal(${ev.id})" title="${ev.title}">${t.icon} ${ev.title}</div>`;
+    const MAX_LABELS = 2;
+    const labelsHtml = dayEvents.slice(0, MAX_LABELS).map(ev => {
+      const color = getEvColor(ev.type);
+      const isMultiDay = ev.start_date !== ev.end_date;
+      const startsHere = ev.start_date === dateStr;
+      const endsHere   = ev.end_date   === dateStr;
+      const extraClass = isMultiDay
+        ? (startsHere ? 'cal-label-start' : endsHere ? 'cal-label-end' : 'cal-label-mid')
+        : '';
+      return `<div class="cal-label ${extraClass}" style="background:${color}33;color:${color}" onclick="event.stopPropagation();openEventDetail(${ev.id})">${ev.title}</div>`;
     }).join('');
 
-    const more = dayEvents.length > 3 ? `<div style="font-size:10px;color:var(--text-muted);padding:1px 4px">+${dayEvents.length-3}</div>` : '';
+    const overflow = dayEvents.length > MAX_LABELS
+      ? `<div class="cal-overflow">+${dayEvents.length - MAX_LABELS}</div>`
+      : '';
 
-    html += `<div class="cal-day ${isToday?'today':''} ${dayEvents.length?'has-events':''}" onclick="openEventModal()">
+    const eventsHtml = dayEvents.length
+      ? `<div class="cal-labels">${labelsHtml}${overflow}</div>`
+      : '';
+
+    html += `<div class="cal-day ${isToday ? 'today' : ''} ${dayEvents.length ? 'has-events' : ''} ${isWeekend ? 'weekend' : ''}" onclick="openEventModal()">
       <div class="cal-day-num">${d}</div>
-      ${dots}${more}
+      ${eventsHtml}
     </div>`;
   }
 
   const total = startOffset + lastDay.getDate();
   const trailing = (7 - (total % 7)) % 7;
   for (let d = 1; d <= trailing; d++) {
-    html += `<div class="cal-day other-month"><div class="cal-day-num">${d}</div></div>`;
+    const col = (total + d - 1) % 7;
+    html += `<div class="cal-day other-month ${DAYS_WEEKEND.has(col) ? 'weekend' : ''}"><div class="cal-day-num">${d}</div></div>`;
   }
 
   grid.innerHTML = html;
@@ -453,18 +473,49 @@ function closeEventModal() {
   editingEventId = null;
 }
 
+function markFieldError(inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  el.classList.add('input-error');
+  el.addEventListener('input', () => el.classList.remove('input-error'), { once: true });
+  el.addEventListener('change', () => el.classList.remove('input-error'), { once: true });
+}
+
+function scrollModalToTop(modalId) {
+  const body = document.querySelector(`#${modalId} .modal-body`);
+  if (body) body.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 async function saveEvent() {
   const errEl = document.getElementById('eventModalError');
   errEl.style.display = 'none';
+
+  // Clear previous errors
+  ['ev_title', 'ev_start_date', 'ev_end_date'].forEach(id => {
+    document.getElementById(id)?.classList.remove('input-error');
+  });
 
   const title      = document.getElementById('ev_title').value.trim();
   const start_date = document.getElementById('ev_start_date').value;
   const end_date   = document.getElementById('ev_end_date').value;
 
-  if (!title)      { showFormError('eventModalError', 'Le titre est requis.'); return; }
-  if (!start_date) { showFormError('eventModalError', 'La date de début est requise.'); return; }
-  if (!end_date)   { showFormError('eventModalError', 'La date de fin est requise.'); return; }
-  if (end_date < start_date) { showFormError('eventModalError', 'La date de fin doit être après la date de début.'); return; }
+  let hasError = false;
+  if (!title)      { markFieldError('ev_title');      hasError = true; }
+  if (!start_date) { markFieldError('ev_start_date'); hasError = true; }
+  if (!end_date)   { markFieldError('ev_end_date');   hasError = true; }
+
+  if (hasError) {
+    showFormError('eventModalError', 'Veuillez remplir les champs obligatoires.');
+    scrollModalToTop('eventModal');
+    return;
+  }
+
+  if (end_date < start_date) {
+    markFieldError('ev_end_date');
+    showFormError('eventModalError', 'La date de fin doit être après la date de début.');
+    scrollModalToTop('eventModal');
+    return;
+  }
 
   const hasTime = document.getElementById('ev_has_time').checked;
   let start_time = null, end_time = null;

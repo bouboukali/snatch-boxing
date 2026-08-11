@@ -408,10 +408,11 @@
     </div>
     <div class="modal-body">
       <div id="eventModalError" class="error-msg"></div>
+      <p class="form-required-note"><span class="required-star">*</span> Champs obligatoires</p>
 
       <div class="form-grid">
         <div class="form-group full-width">
-          <label>Titre de l'événement</label>
+          <label>Titre de l'événement <span class="required-star">*</span></label>
           <input type="text" id="ev_title" placeholder="Ex: Séance sparring semaine 24">
         </div>
 
@@ -439,12 +440,12 @@
         </div>
 
         <div class="form-group">
-          <label>Date de début <span id="ev_start_date_txt" class="date-fr-hint"></span></label>
+          <label>Date de début <span class="required-star">*</span> <span id="ev_start_date_txt" class="date-fr-hint"></span></label>
           <input type="date" id="ev_start_date" onchange="onDateChange('ev_start_date')">
         </div>
 
         <div class="form-group">
-          <label>Date de fin <span id="ev_end_date_txt" class="date-fr-hint"></span></label>
+          <label>Date de fin <span class="required-star">*</span> <span id="ev_end_date_txt" class="date-fr-hint"></span></label>
           <input type="date" id="ev_end_date" onchange="onDateChange('ev_end_date')">
         </div>
 
@@ -482,15 +483,15 @@
         </div>
 
         <div class="form-group">
-          <label>Lieu</label>
+          <label>Lieu <span class="optional-tag">Facultatif</span></label>
           <input type="text" id="ev_location" placeholder="Salle de boxe Snatch">
         </div>
         <div class="form-group">
-          <label>Pays</label>
+          <label>Pays <span class="optional-tag">Facultatif</span></label>
           <input type="text" id="ev_country" placeholder="France">
         </div>
         <div class="form-group full-width">
-          <label>Description</label>
+          <label>Description <span class="optional-tag">Facultatif</span></label>
           <textarea id="ev_description" placeholder="Détails, consignes, matériel à apporter..."></textarea>
         </div>
       </div>
