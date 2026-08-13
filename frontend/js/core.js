@@ -182,8 +182,8 @@ function initApp(role, email) {
     showPage('admin-users');
     loadAdminUsers();
   } else {
-    showPage('boxer-profile');
-    loadBoxerProfile();
+    showPage('boxer-dashboard');
+    loadBoxerDashboard();
   }
 }
 
@@ -202,6 +202,7 @@ function buildNav(role) {
         { id: 'admin-users', icon: '', label: 'Utilisateurs' },
       ]
     : [
+        { id: 'boxer-dashboard', icon: '', label: 'Tableau de bord' },
         { id: 'boxer-profile',   icon: '', label: 'Mon profil' },
         { id: 'boxer-events',    icon: '', label: 'Mes événements' },
         { id: 'boxer-training',  icon: '', label: 'Fiches entraînement' },
@@ -235,6 +236,7 @@ function showPage(pageId) {
   if (pageId === 'coach-calendar') loadCalendar();
   if (pageId === 'coach-training') loadTrainingSheets();
   if (pageId === 'coach-payments') loadCoachPayments();
+  if (pageId === 'boxer-dashboard') loadBoxerDashboard();
   if (pageId === 'boxer-profile') loadBoxerProfile();
   if (pageId === 'boxer-training') loadTrainingSheets();
   if (pageId === 'boxer-events') loadBoxerEvents();
