@@ -152,6 +152,25 @@ router.put('/boxer/:id/rsvp', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+router.post('/coach/:id/remind', requireCoach, async (req, res) => {
+  const [ev] = await db.query('SELECT * FROM events WHERE id = $1', [req.params.id]);
+  if (!ev) return res.status(404).json({ error: 'Événement introuvable' });
+
+  const pending = await db.query(`
+    SELECT u.id, u.email FROM event_invitations ei
+    JOIN users u ON u.id = ei.boxer_id
+    WHERE ei.event_id = $1 AND ei.rsvp_status = 'pending'
+  `, [req.params.id]);
+
+  if (!pending.length) return res.json({ sent: 0 });
+
+  for (const boxer of pending) {
+    sendEventInvitation(boxer.email, ev).catch(err => console.error('Remind email error:', err));
+  }
+
+  res.json({ sent: pending.length });
+});
+
 router.get('/:id', requireAuth, async (req, res) => {
   const [ev] = await db.query('SELECT * FROM events WHERE id = $1', [req.params.id]);
   if (!ev) return res.status(404).json({ error: 'Événement introuvable' });

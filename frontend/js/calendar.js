@@ -198,9 +198,18 @@ function calNextMonth() {
 
 function onDateChange(inputId) {
   const val = document.getElementById(inputId).value;
-  const txtEl = document.getElementById(inputId + '_txt');
-  if (txtEl) {
-    txtEl.textContent = val ? `· ${val.split('-').reverse().join('/')}` : '';
+
+  // Mise à jour du display français
+  const displayEl = document.getElementById(inputId + '_display');
+  if (displayEl) {
+    if (val) {
+      const [y, m, d] = val.split('-');
+      displayEl.textContent = `${d}/${m}/${y}`;
+      displayEl.classList.remove('empty');
+    } else {
+      displayEl.textContent = 'JJ / MM / AAAA';
+      displayEl.classList.add('empty');
+    }
   }
 
   const startEl = document.getElementById('ev_start_date');
@@ -617,11 +626,18 @@ function closeEventModal() {
 }
 
 function markFieldError(inputId) {
-  const el = document.getElementById(inputId);
+  // Pour les date fields, l'erreur s'applique sur le display visible
+  const displayEl = document.getElementById(inputId + '_display');
+  const el = displayEl || document.getElementById(inputId);
   if (!el) return;
   el.classList.add('input-error');
-  el.addEventListener('input', () => el.classList.remove('input-error'), { once: true });
-  el.addEventListener('change', () => el.classList.remove('input-error'), { once: true });
+  const input = document.getElementById(inputId);
+  const clear = () => el.classList.remove('input-error');
+  if (input) {
+    input.addEventListener('change', clear, { once: true });
+  } else {
+    el.addEventListener('input', clear, { once: true });
+  }
 }
 
 function scrollModalToTop(modalId) {
@@ -734,10 +750,9 @@ async function openEventDetail(eventId) {
   const endFmt   = new Date(ev.end_date).toLocaleDateString('fr-FR',   { day: 'numeric', month: 'long', year: 'numeric' });
   const duration = calcDurationLabel(ev.start_time, ev.end_time);
 
-  document.getElementById('evDetailTitle').innerHTML =
-    `${t.icon} ${ev.title} ${ev.is_private ? '<span style="font-size:13px;color:var(--text-muted)">Privé</span>' : ''}`;
+  document.getElementById('evDetailTitle').innerHTML = `${t.icon} ${ev.title}`;
 
-  const rsvpIcon  = { accepted: '✓', declined: '✗', pending: '…' };
+  const rsvpIcon  = { accepted: '✓', declined: '✗', pending: '' };
   const rsvpLabel = { accepted: 'Accepté', declined: 'Refusé', pending: 'En attente' };
   const rsvpBg    = { accepted: 'rgba(46,204,113,0.12)', declined: 'rgba(231,76,60,0.12)', pending: 'rgba(255,255,255,0.05)' };
   const rsvpCol   = { accepted: '#2ecc71', declined: '#e74c3c', pending: 'var(--text-muted)' };
@@ -760,11 +775,10 @@ async function openEventDetail(eventId) {
           return `
             <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;background:${rsvpBg[status]};border:1px solid ${rsvpCol[status]}22">
               <div style="width:34px;height:34px;border-radius:50%;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0"></div>
-              <div style="flex:1;min-width:0">
-                <div style="font-weight:600;font-size:14px">${name}</div>
-                <div style="font-size:12px;color:var(--text-muted)">${b.email}</div>
+              <div style="flex:1;min-width:0;overflow:hidden">
+                <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
               </div>
-              <span style="font-size:13px;font-weight:700;color:${rsvpCol[status]};white-space:nowrap">${rsvpIcon[status]} ${rsvpLabel[status]}</span>
+              <span style="font-size:13px;font-weight:700;color:${rsvpCol[status]};white-space:nowrap">${rsvpIcon[status]}${rsvpIcon[status] ? ' ' : ''}${rsvpLabel[status]}</span>
             </div>
           `;
         }).join('')}
@@ -777,20 +791,20 @@ async function openEventDetail(eventId) {
       ${ev.is_private ? '<span style="padding:4px 14px;border-radius:20px;font-size:12px;background:rgba(255,255,255,0.06);color:var(--text-muted)">Privé</span>' : '<span style="padding:4px 14px;border-radius:20px;font-size:12px;background:rgba(255,255,255,0.06);color:var(--text-muted)">Public</span>'}
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-      <div style="padding:12px 16px;background:var(--input-bg);border-radius:8px;border:1px solid var(--border)">
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Date</div>
-        <div style="font-size:14px;font-weight:600">${sameDay ? startFmt : `${startFmt} → ${endFmt}`}</div>
+    <div class="ev-detail-info-grid">
+      <div class="ev-detail-info-card">
+        <div class="ev-detail-info-label">Date</div>
+        <div class="ev-detail-info-val">${sameDay ? startFmt : `${startFmt} → ${endFmt}`}</div>
       </div>
       ${ev.start_time ? `
-      <div style="padding:12px 16px;background:var(--input-bg);border-radius:8px;border:1px solid var(--border)">
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">⏰ Horaire</div>
-        <div style="font-size:14px;font-weight:600">${ev.start_time}${ev.end_time ? ' – ' + ev.end_time : ''}${duration ? `<span class="duration-badge" style="margin-left:10px;font-size:11px;padding:2px 8px">⏱ ${duration}</span>` : ''}</div>
+      <div class="ev-detail-info-card">
+        <div class="ev-detail-info-label">⏰ Horaire</div>
+        <div class="ev-detail-info-val">${ev.start_time}${ev.end_time ? ' – ' + ev.end_time : ''}${duration ? `<span class="duration-badge" style="margin-left:8px;font-size:11px;padding:2px 8px">⏱ ${duration}</span>` : ''}</div>
       </div>` : ''}
-      ${ev.location ? `
-      <div style="padding:12px 16px;background:var(--input-bg);border-radius:8px;border:1px solid var(--border);grid-column:1/-1">
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Lieu</div>
-        <div style="font-size:14px;font-weight:600">${ev.location}${ev.country && ev.country !== 'France' ? `, ${ev.country}` : ''}</div>
+      ${ev.location || ev.city ? `
+      <div class="ev-detail-info-card ev-detail-info-full">
+        <div class="ev-detail-info-label">📍 Lieu</div>
+        <div class="ev-detail-info-val">${[ev.location, ev.city, ev.country].filter(Boolean).join(', ')}</div>
       </div>` : ''}
     </div>
 
@@ -807,7 +821,8 @@ async function openEventDetail(eventId) {
     ${inviteesHtml}
 
     ${currentRole === 'coach' ? `
-    <div style="margin-top:20px;display:flex;justify-content:flex-end">
+    <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+      ${counts.pending > 0 ? `<button class="btn btn-sm" style="background:rgba(201,160,32,0.12);color:var(--primary);border:1px solid rgba(201,160,32,0.3)" onclick="remindPending(${ev.id}, this)">📧 Relancer (${counts.pending})</button>` : ''}
       <button class="btn btn-sm btn-secondary" onclick="closeEventDetail();openEventModal(${ev.id})">Modifier</button>
     </div>` : ''}
   `;
@@ -817,4 +832,14 @@ async function openEventDetail(eventId) {
 
 function closeEventDetail() {
   document.getElementById('eventDetailModal').classList.remove('open');
+}
+
+async function remindPending(eventId, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Envoi…';
+  const res = await apiFetch(`/api/events/coach/${eventId}/remind`, { method: 'POST' });
+  if (!res || !res.ok) { btn.disabled = false; btn.textContent = 'Erreur'; return; }
+  const data = await res.json();
+  btn.textContent = `✓ ${data.sent} email${data.sent > 1 ? 's' : ''} envoyé${data.sent > 1 ? 's' : ''}`;
+  setTimeout(() => { btn.disabled = false; }, 3000);
 }
