@@ -326,11 +326,11 @@ async function submitEmailChange() {
 
   if (res.ok) {
     const data = await res.json();
-    showEmailChangeMsg(data.message, false);
-    document.getElementById('newEmailInput').disabled = true;
+    hideEmailChangeForm();
+    showToast(`Un email de confirmation a été envoyé à ${document.getElementById('newEmailInput').value.trim()}`, 'success');
   } else {
     const err = await res.json();
-    showEmailChangeMsg(err.error || 'Erreur', true);
+    showEmailChangeMsg(err.error || "Impossible d'envoyer l'email de confirmation.", true);
   }
 }
 
