@@ -320,17 +320,17 @@ async function submitEmailChange() {
 
   const res = await apiFetch('/api/boxer/request-email-change', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ new_email: newEmail })
   });
   if (!res) return;
 
   if (res.ok) {
-    const data = await res.json();
     hideEmailChangeForm();
-    showToast(`Un email de confirmation a été envoyé à ${document.getElementById('newEmailInput').value.trim()}`, 'success');
+    showToast(`Email de confirmation envoyé à ${newEmail}`, 'success');
   } else {
     const err = await res.json();
-    showEmailChangeMsg(err.error || "Impossible d'envoyer l'email de confirmation.", true);
+    showToast(err.error || "Impossible d'envoyer l'email de confirmation.", 'error');
   }
 }
 
