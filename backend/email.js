@@ -102,6 +102,24 @@ L'équipe Snatch Boxing Academy
   await getTransporter().sendMail({ from: FROM, to, subject, text });
 }
 
+async function sendEmailConfirmation(toEmail, firstName, confirmUrl) {
+  const name = firstName || toEmail;
+  const subject = '[Snatch Boxing Academy] Confirmez votre nouvelle adresse email';
+  const text = `Bonjour ${name},
+
+Vous avez demandé à changer votre adresse email sur Snatch Boxing Academy.
+
+Cliquez sur le lien ci-dessous pour confirmer :
+${confirmUrl}
+
+Ce lien est valable 1 heure. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
+
+L'équipe Snatch Boxing Academy
+`;
+
+  await getTransporter().sendMail({ from: FROM, to: toEmail, subject, text });
+}
+
 const RSVP_FR = { accepted: 'accepté', declined: 'décliné' };
 
 async function sendRsvpNotification(toEmail, { boxerName, eventTitle, status, eventDate }) {
@@ -124,4 +142,4 @@ L'équipe Snatch Boxing Academy
   await getTransporter().sendMail({ from: FROM, to: toEmail, subject, text });
 }
 
-module.exports = { sendEventInvitation, sendPaymentReminder, sendRsvpNotification };
+module.exports = { sendEventInvitation, sendPaymentReminder, sendRsvpNotification, sendEmailConfirmation };

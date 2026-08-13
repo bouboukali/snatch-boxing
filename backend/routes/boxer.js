@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const db = require('../db');
 const { requireBoxer } = require('../middleware/auth');
-const { sendEmailConfirmation } = require('../mailer');
+const { sendEmailConfirmation } = require('../email');
 
 const router = express.Router();
 
