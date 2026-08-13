@@ -155,6 +155,9 @@ async function loadBoxerDashboard() {
     ? Math.ceil((new Date(nextEv.start_date + 'T00:00:00') - today) / 86400000)
     : null;
 
+  const greetEl = document.getElementById('boxerDashGreeting');
+  if (greetEl) greetEl.textContent = `Bonjour, ${firstName}`;
+
   document.getElementById('boxerDashContent').innerHTML = `
 
     <!-- KPI row -->

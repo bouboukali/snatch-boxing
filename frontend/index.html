@@ -201,7 +201,7 @@
     <!-- Boxer: Dashboard -->
     <div class="page" id="page-boxer-dashboard">
       <div class="page-header">
-        <h2>Bonjour</h2>
+        <h2 id="boxerDashGreeting">Bonjour</h2>
         <p>Voici ce qui vous attend</p>
       </div>
       <div id="boxerDashContent"></div>
@@ -213,7 +213,24 @@
         <h2>Mes événements</h2>
         <p>Entraînements et événements à venir</p>
       </div>
-      <div id="boxerEventsList"></div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <button class="btn btn-sm btn-secondary" onclick="boxerCalPrevMonth()">◀</button>
+          <h3 id="boxerCalTitle" style="flex:1;text-align:center"></h3>
+          <button class="btn btn-sm btn-secondary" onclick="boxerCalNextMonth()">▶</button>
+        </div>
+        <div class="card-body" style="padding:12px">
+          <div class="cal-grid" id="boxerCalGrid"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Tous les événements</h3>
+        </div>
+        <div class="card-body" id="boxerEventsList"></div>
+      </div>
     </div>
 
     <!-- Boxer: Mon profil -->

@@ -28,8 +28,10 @@ const DAYS_WEEKEND = new Set([5, 6]); // indices Sam=5, Dim=6
 
 let calYear, calMonth, allEvents = [];
 let editingEventId = null;
+let calMode = 'coach'; // 'coach' | 'boxer'
 
 async function loadCalendar() {
+  calMode = 'coach';
   const now = new Date();
   if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
   const res = await apiFetch('/api/events/coach');
@@ -90,7 +92,8 @@ function renderCalendar() {
       ? `<div class="cal-labels">${labelsHtml}${overflow}</div>`
       : '';
 
-    html += `<div class="cal-day ${isToday ? 'today' : ''} ${dayEvents.length ? 'has-events' : ''} ${isWeekend ? 'weekend' : ''}" onclick="openEventModal()">
+    const dayClick = calMode === 'coach' ? 'openEventModal()' : dayEvents.length === 1 ? `openEventDetail(${dayEvents[0].id})` : '';
+    html += `<div class="cal-day ${isToday ? 'today' : ''} ${dayEvents.length ? 'has-events' : ''} ${isWeekend ? 'weekend' : ''}" ${dayClick ? `onclick="${dayClick}"` : ''} style="${calMode === 'boxer' && !dayClick ? 'cursor:default' : ''}">
       <div class="cal-day-num">${d}</div>
       ${eventsHtml}
     </div>`;
