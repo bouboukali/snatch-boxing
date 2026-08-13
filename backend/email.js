@@ -102,4 +102,26 @@ L'équipe Snatch Boxing Academy
   await getTransporter().sendMail({ from: FROM, to, subject, text });
 }
 
-module.exports = { sendEventInvitation, sendPaymentReminder };
+const RSVP_FR = { accepted: 'accepté', declined: 'décliné' };
+
+async function sendRsvpNotification(toEmail, { boxerName, eventTitle, status, eventDate }) {
+  const statusFr = RSVP_FR[status] || status;
+  const subject = `[Snatch Boxing] ${boxerName} a ${statusFr} — ${eventTitle}`;
+  const text = `Bonjour,
+
+${boxerName} a ${statusFr} l'invitation à l'événement suivant :
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ${eventTitle.toUpperCase()}
+  Date : ${eventDate}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Connectez-vous à votre espace coach pour consulter l'état des réponses.
+
+L'équipe Snatch Boxing Academy
+`;
+
+  await getTransporter().sendMail({ from: FROM, to: toEmail, subject, text });
+}
+
+module.exports = { sendEventInvitation, sendPaymentReminder, sendRsvpNotification };

@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { requireCoach, requireAuth } = require('../middleware/auth');
-const { sendEventInvitation } = require('../email');
+const { sendEventInvitation, sendRsvpNotification } = require('../email');
 
 const router = express.Router();
 
@@ -148,6 +148,30 @@ router.put('/boxer/:id/rsvp', requireAuth, async (req, res) => {
     VALUES ($1, $2, $3, $4)
     ON CONFLICT (event_id, boxer_id) DO UPDATE SET rsvp_status = EXCLUDED.rsvp_status
   `, [req.params.id, req.user.id, status, new Date().toISOString()]);
+
+  // Notify coach by email (fire-and-forget)
+  if (status === 'accepted' || status === 'declined') {
+    try {
+      const [boxer] = await db.query(
+        'SELECT bp.first_name, bp.last_name, u.email FROM users u LEFT JOIN boxer_profiles bp ON bp.user_id = u.id WHERE u.id = $1',
+        [req.user.id]
+      );
+      const [coach] = await db.query(
+        'SELECT u.email FROM users u WHERE u.role = $1 LIMIT 1',
+        ['coach']
+      );
+      if (boxer && coach) {
+        const boxerName = [boxer.first_name, boxer.last_name].filter(Boolean).join(' ') || req.user.email;
+        const eventDate = ev.start_date === ev.end_date
+          ? new Date(ev.start_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+          : `Du ${new Date(ev.start_date).toLocaleDateString('fr-FR')} au ${new Date(ev.end_date).toLocaleDateString('fr-FR')}`;
+        sendRsvpNotification(coach.email, { boxerName, eventTitle: ev.title, status, eventDate })
+          .catch(err => console.error('RSVP notification error:', err));
+      }
+    } catch (err) {
+      console.error('RSVP notification lookup error:', err);
+    }
+  }
 
   res.json({ success: true });
 });
