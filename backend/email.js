@@ -1,33 +1,47 @@
-const nodemailer = require('nodemailer');
+const https = require('https');
 
-let transporter;
+const FROM_NAME  = 'Snatch Boxing Academy';
+const FROM_EMAIL = process.env.BREVO_FROM || 'bchr1307@gmail.com';
 
-function getTransporter() {
-  if (transporter) return transporter;
-
-  if (process.env.SMTP_HOST) {
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-    });
-  } else {
-    // Dev mode: log to console
-    transporter = {
-      sendMail: async (opts) => {
-        console.log('\n📧 EMAIL (mode dev — configurez SMTP dans .env pour l\'envoyer vraiment)');
-        console.log(`   À      : ${opts.to}`);
-        console.log(`   Sujet  : ${opts.subject}`);
-        console.log(`   Corps  :\n${opts.text}\n`);
-        return { messageId: 'dev-' + Date.now() };
-      }
-    };
+async function send({ to, subject, text }) {
+  if (!process.env.BREVO_API_KEY) {
+    console.log('\n📧 EMAIL (mode dev — configurez BREVO_API_KEY pour l\'envoyer vraiment)');
+    console.log(`   À      : ${to}`);
+    console.log(`   Sujet  : ${subject}`);
+    console.log(`   Corps  :\n${text}\n`);
+    return;
   }
-  return transporter;
-}
 
-const FROM = process.env.SMTP_FROM || '"Snatch Boxing Academy" <noreply@snatch-boxing.fr>';
+  const body = JSON.stringify({
+    sender: { name: FROM_NAME, email: FROM_EMAIL },
+    to: [{ email: to }],
+    subject,
+    textContent: text,
+  });
+
+  await new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.brevo.com',
+      path: '/v3/smtp/email',
+      method: 'POST',
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        if (res.statusCode >= 400) reject(new Error(`Brevo ${res.statusCode}: ${data}`));
+        else resolve();
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
 
 const EVENT_TYPE_FR = {
   boxe: 'Boxe anglaise',
@@ -52,8 +66,10 @@ async function sendEventInvitation(to, event) {
     ? `Le ${formatDate(event.start_date)}`
     : `Du ${formatDate(event.start_date)} au ${formatDate(event.end_date)}`;
 
-  const subject = `[Snatch Boxing Academy] Invitation — ${event.title}`;
-  const text = `Bonjour,
+  await send({
+    to,
+    subject: `[Snatch Boxing Academy] Invitation — ${event.title}`,
+    text: `Bonjour,
 
 Vous êtes invité(e) à un événement organisé par votre coach à la Snatch Boxing Academy.
 
@@ -71,9 +87,8 @@ Connectez-vous à votre espace sur la plateforme Snatch Boxing Academy pour cons
 
 À bientôt sur le ring !
 L'équipe Snatch Boxing Academy
-`;
-
-  await getTransporter().sendMail({ from: FROM, to, subject, text });
+`,
+  });
 }
 
 const MONTHS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -82,8 +97,10 @@ async function sendPaymentReminder(to, { first_name, month, year }) {
   const monthLabel = MONTHS_FR[month - 1];
   const name = first_name ? `Bonjour ${first_name},` : 'Bonjour,';
 
-  const subject = `[Snatch Boxing Academy] Rappel de paiement — ${monthLabel} ${year}`;
-  const text = `${name}
+  await send({
+    to,
+    subject: `[Snatch Boxing Academy] Rappel de paiement — ${monthLabel} ${year}`,
+    text: `${name}
 
 Nous vous contactons car votre cotisation du mois de ${monthLabel} ${year} n'a pas encore été réglée.
 
@@ -97,15 +114,17 @@ En cas de doute, n'hésitez pas à contacter votre coach directement.
 
 À bientôt sur le ring !
 L'équipe Snatch Boxing Academy
-`;
-
-  await getTransporter().sendMail({ from: FROM, to, subject, text });
+`,
+  });
 }
 
 async function sendEmailConfirmation(toEmail, firstName, confirmUrl) {
   const name = firstName || toEmail;
-  const subject = '[Snatch Boxing Academy] Confirmez votre nouvelle adresse email';
-  const text = `Bonjour ${name},
+
+  await send({
+    to: toEmail,
+    subject: '[Snatch Boxing Academy] Confirmez votre nouvelle adresse email',
+    text: `Bonjour ${name},
 
 Vous avez demandé à changer votre adresse email sur Snatch Boxing Academy.
 
@@ -115,17 +134,19 @@ ${confirmUrl}
 Ce lien est valable 1 heure. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
 
 L'équipe Snatch Boxing Academy
-`;
-
-  await getTransporter().sendMail({ from: FROM, to: toEmail, subject, text });
+`,
+  });
 }
 
 const RSVP_FR = { accepted: 'accepté', declined: 'décliné' };
 
 async function sendRsvpNotification(toEmail, { boxerName, eventTitle, status, eventDate }) {
   const statusFr = RSVP_FR[status] || status;
-  const subject = `[Snatch Boxing] ${boxerName} a ${statusFr} — ${eventTitle}`;
-  const text = `Bonjour,
+
+  await send({
+    to: toEmail,
+    subject: `[Snatch Boxing] ${boxerName} a ${statusFr} — ${eventTitle}`,
+    text: `Bonjour,
 
 ${boxerName} a ${statusFr} l'invitation à l'événement suivant :
 
@@ -137,9 +158,8 @@ ${boxerName} a ${statusFr} l'invitation à l'événement suivant :
 Connectez-vous à votre espace coach pour consulter l'état des réponses.
 
 L'équipe Snatch Boxing Academy
-`;
-
-  await getTransporter().sendMail({ from: FROM, to: toEmail, subject, text });
+`,
+  });
 }
 
 module.exports = { sendEventInvitation, sendPaymentReminder, sendRsvpNotification, sendEmailConfirmation };
