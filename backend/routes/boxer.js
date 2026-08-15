@@ -112,7 +112,7 @@ router.post('/request-email-change', requireBoxer, async (req, res) => {
     await sendEmailConfirmation(normalized, profile?.first_name, confirmUrl);
   } catch (e) {
     console.error('Erreur envoi email confirmation:', e.message);
-    return res.status(500).json({ error: "Impossible d'envoyer l'email de confirmation" });
+    return res.status(500).json({ error: `Impossible d'envoyer l'email de confirmation : ${e.message}` });
   }
 
   res.json({ success: true, message: `Un email de confirmation a été envoyé à ${normalized}` });
